@@ -1429,9 +1429,10 @@ function ReviewCommentEditor({
         dirty: true,
         draft,
       }));
+      onUpdateComment(comment.id, draft);
       onCommentDraftChange?.({ body: draft, id: comment.id });
     },
-    [comment.body, comment.id, onCommentDraftChange],
+    [comment.body, comment.id, onCommentDraftChange, onUpdateComment],
   );
 
   const handleAskCodex = useCallback(() => {

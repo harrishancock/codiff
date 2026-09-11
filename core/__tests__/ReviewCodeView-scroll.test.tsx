@@ -1413,7 +1413,7 @@ test('hunk navigation orders deletion comments before added rows in unified chan
   );
 });
 
-test('review comment typing stays local until a comment action commits it', async () => {
+test('review comment typing saves before a comment action commits it', async () => {
   const file = createChangedFile('src/comment.ts');
   const comment = {
     body: '',
@@ -1456,7 +1456,8 @@ test('review comment typing stays local until a comment action commits it', asyn
     throw new Error('Expected review comment textarea.');
   }
   await setInputValue(textarea, 'Please check this.');
-  expect(onUpdateComment).not.toHaveBeenCalled();
+  expect(onUpdateComment).toHaveBeenCalledOnce();
+  expect(onUpdateComment).toHaveBeenCalledWith('comment-1', 'Please check this.');
   expect(onCommentDraftChange).toHaveBeenLastCalledWith(
     expect.objectContaining({ body: 'Please check this.', id: 'comment-1' }),
   );
@@ -1469,7 +1470,7 @@ test('review comment typing stays local until a comment action commits it', asyn
   await act(async () => {
     askButton.click();
   });
-  expect(onUpdateComment).toHaveBeenCalledWith('comment-1', 'Please check this.');
+  expect(onUpdateComment).toHaveBeenCalledTimes(2);
   expect(onAskCodex).toHaveBeenCalledWith('comment-1');
 });
 
