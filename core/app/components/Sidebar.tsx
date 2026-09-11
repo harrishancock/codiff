@@ -1,3 +1,4 @@
+import { ChatCircleDotsIcon as ChatCircleDots } from '@phosphor-icons/react/ChatCircleDots';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { matchesShortcut } from '../../config/keymap.ts';
 import type { CodiffKeymap } from '../../config/types.ts';
@@ -42,6 +43,7 @@ export function Sidebar({
   onSelectSource,
   onShareWalkthrough,
   onToggleCommitView,
+  pendingCommentCountBySource,
   pullRequestSource,
   reloadDeltaPaths,
   searchQuery,
@@ -71,6 +73,7 @@ export function Sidebar({
   onSelectSource: (source: ReviewSource) => void;
   onShareWalkthrough?: () => void;
   onToggleCommitView: () => void;
+  pendingCommentCountBySource: ReadonlyMap<string, number>;
   pullRequestSource: PullRequestSource | null;
   reloadDeltaPaths: ReadonlySet<string>;
   searchQuery: string;
@@ -136,6 +139,7 @@ export function Sidebar({
           loading={historyLoading}
           onLoadMore={onLoadMoreHistory}
           onSelectSource={onSelectSource}
+          pendingCommentCountBySource={pendingCommentCountBySource}
           pullRequestSource={pullRequestSource}
           searchQuery={searchQuery}
         />
@@ -240,6 +244,7 @@ function HistorySidebar({
   loading,
   onLoadMore,
   onSelectSource,
+  pendingCommentCountBySource,
   pullRequestSource,
   searchQuery,
 }: {
@@ -250,6 +255,7 @@ function HistorySidebar({
   loading: boolean;
   onLoadMore: () => void;
   onSelectSource: (source: ReviewSource) => void;
+  pendingCommentCountBySource: ReadonlyMap<string, number>;
   pullRequestSource: PullRequestSource | null;
   searchQuery: string;
 }) {
@@ -414,6 +420,7 @@ function HistorySidebar({
 
         const selected = row.key === currentSourceKey;
         const hasMetadata = Boolean(row.author && row.committedAt);
+        const commentCount = pendingCommentCountBySource.get(row.key) ?? 0;
         return (
           <button
             className={`history-entry${selected ? ' selected' : ''}${hasMetadata ? ' with-metadata' : ''}`}
@@ -431,7 +438,19 @@ function HistorySidebar({
                   ? row.ref
                   : 'local'}
             </span>
-            <span className="history-entry-subject">{row.subject}</span>
+            <span className="history-entry-subject">
+              <span>{row.subject}</span>
+              {commentCount > 0 ? (
+                <span
+                  aria-label={`${commentCount} staged review ${commentCount === 1 ? 'comment' : 'comments'}`}
+                  className="history-entry-comment-count"
+                  title={`${commentCount} staged review ${commentCount === 1 ? 'comment' : 'comments'}`}
+                >
+                  <ChatCircleDots aria-hidden size={13} weight="fill" />
+                  <span>{commentCount}</span>
+                </span>
+              ) : null}
+            </span>
             {hasMetadata ? (
               <span className="history-entry-meta">
                 <span className="history-entry-author">

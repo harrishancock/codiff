@@ -89,6 +89,7 @@ import {
   getPendingReviewCommentCount,
   getReviewCommentsFromState,
   getVisibleReviewComments,
+  mergeReviewComments,
 } from './lib/review-comments.ts';
 import { getSelectedPathFromScroll } from './lib/review-scroll.ts';
 import {
@@ -223,6 +224,9 @@ export default function App() {
   const programmaticScrollPathRef = useRef<string | null>(null);
   const programmaticScrollTimerRef = useRef<number | null>(null);
   const sourceSessionsRef = useRef<Map<string, SourceSession>>(new Map());
+  const reviewDraftRevisionBySourceRef = useRef<Map<string, number>>(new Map());
+  const reviewDraftRepositoryRootRef = useRef<string | null>(null);
+  const reviewDraftSaveErrorRef = useRef<string | null>(null);
   const stateRef = useRef<RepositoryState | null>(null);
   const collapsedRef = useRef<Set<string>>(new Set());
   const expandedReviewKeysRef = useRef<Set<string>>(new Set());
@@ -538,7 +542,12 @@ export default function App() {
           stateRef.current = orderedState;
           setState(orderedState);
           setLocalChangesDetected(false);
-          setReviewComments(getReviewCommentsFromState(orderedState));
+          setReviewComments((current) =>
+            mergeReviewComments(
+              getReviewCommentsFromState(orderedState),
+              current.filter((comment) => !comment.isReadOnly),
+            ),
+          );
           if (walkthroughNeedsRefresh) {
             refreshWalkthroughForState(orderedState);
           }
@@ -640,6 +649,36 @@ export default function App() {
   }, [reviewCommentsRef]);
 
   useEffect(() => {
+    const currentState = stateRef.current;
+    if (!currentState || reviewDraftRepositoryRootRef.current !== currentState.root) {
+      return;
+    }
+    const saveReviewDrafts = window.codiff.saveReviewDrafts;
+    if (!saveReviewDrafts) {
+      return;
+    }
+    const sourceKey = getSourceKey(currentState.source);
+    const revision = (reviewDraftRevisionBySourceRef.current.get(sourceKey) ?? 0) + 1;
+    reviewDraftRevisionBySourceRef.current.set(sourceKey, revision);
+    void saveReviewDrafts({
+      comments: reviewComments,
+      revision,
+      source: currentState.source,
+      sourceKey,
+    })
+      .then(() => {
+        reviewDraftSaveErrorRef.current = null;
+      })
+      .catch((error: unknown) => {
+        const message = error instanceof Error ? error.message : String(error);
+        if (reviewDraftSaveErrorRef.current !== message) {
+          reviewDraftSaveErrorRef.current = message;
+          window.alert(`Codiff could not save review comments: ${message}`);
+        }
+      });
+  }, [reviewComments, state]);
+
+  useEffect(() => {
     let canceled = false;
     let loadingPlan = false;
 
@@ -692,6 +731,39 @@ export default function App() {
         ...nextState,
         files: sortFiles(nextState.files),
       };
+      const persistedDrafts = window.codiff.getReviewDrafts
+        ? await window.codiff.getReviewDrafts().catch((error: unknown) => {
+            window.alert(
+              `Codiff could not restore review comments: ${error instanceof Error ? error.message : String(error)}`,
+            );
+            return [];
+          })
+        : [];
+      if (canceled) {
+        return;
+      }
+      sourceSessionsRef.current.clear();
+      reviewDraftRevisionBySourceRef.current.clear();
+      const restoredCommentCounts = new Map<string, number>();
+      for (const persisted of persistedDrafts) {
+        reviewDraftRevisionBySourceRef.current.set(persisted.sourceKey, persisted.revision);
+        restoredCommentCounts.set(
+          persisted.sourceKey,
+          getPendingReviewCommentCount(persisted.comments),
+        );
+        sourceSessionsRef.current.set(persisted.sourceKey, {
+          collapsed: new Set(),
+          expandedReviewKeys: new Set(),
+          narrativeWalkthrough: null,
+          reviewComments: persisted.comments,
+          selectedPath: null,
+          viewed: {},
+          walkthroughError: null,
+          walkthroughFiles: [],
+        });
+      }
+      setPendingCommentCountBySource(restoredCommentCounts);
+      reviewDraftRepositoryRootRef.current = orderedState.root;
       const nextHistorySource: ReviewSource | null =
         getReloadHistorySource(reloadSelection, orderedState) ??
         getHistorySource(orderedState.source) ??
@@ -798,7 +870,12 @@ export default function App() {
       setItemVersionByKey({});
       resetCommentFocus();
       setReloadDeltaPaths(nextReloadDeltaPaths);
-      setReviewComments(getReviewCommentsFromState(orderedState));
+      const currentDrafts = sourceSessionsRef.current.get(
+        getSourceKey(orderedState.source),
+      )?.reviewComments;
+      setReviewComments(
+        mergeReviewComments(getReviewCommentsFromState(orderedState), currentDrafts ?? []),
+      );
       setViewed(nextViewed);
       const nextSelectedPath = reloadSelectedPath ?? orderedState.files[0]?.path ?? null;
       setSelectedPath(nextSelectedPath);
@@ -848,6 +925,55 @@ export default function App() {
       }),
     [],
   );
+
+  useEffect(() => {
+    const onClearReviewDraftsRequest = window.codiff.onClearReviewDraftsRequest;
+    const clearReviewDrafts = window.codiff.clearReviewDrafts;
+    if (!onClearReviewDraftsRequest || !clearReviewDrafts) {
+      return;
+    }
+    return onClearReviewDraftsRequest(() => {
+      const sessions = new Map(sourceSessionsRef.current);
+      const currentState = stateRef.current;
+      if (currentState) {
+        sessions.set(getSourceKey(currentState.source), {
+          ...(sessions.get(getSourceKey(currentState.source)) ?? {
+            collapsed: new Set(),
+            expandedReviewKeys: new Set(),
+            selectedPath: null,
+            viewed: {},
+            walkthroughError: null,
+            walkthroughFiles: [],
+          }),
+          reviewComments: reviewCommentsRef.current,
+        });
+      }
+      const count = [...sessions.values()].reduce(
+        (total, session) => total + getPendingReviewCommentCount(session.reviewComments),
+        0,
+      );
+      if (
+        count === 0 ||
+        !window.confirm(
+          `Clear ${count} staged review comment${count === 1 ? '' : 's'} from this repository?`,
+        )
+      ) {
+        return;
+      }
+      void clearReviewDrafts()
+        .then(() => {
+          sourceSessionsRef.current.clear();
+          reviewDraftRevisionBySourceRef.current.clear();
+          setPendingCommentCountBySource(new Map());
+          setReviewComments((current) => current.filter((comment) => comment.isReadOnly));
+        })
+        .catch((error: unknown) => {
+          window.alert(
+            `Codiff could not clear review comments: ${error instanceof Error ? error.message : String(error)}`,
+          );
+        });
+    });
+  }, [reviewCommentsRef, setReviewComments]);
 
   useEffect(() => {
     let canceled = false;
@@ -1102,7 +1228,12 @@ export default function App() {
           setSelectedPath(nextSelectedPath);
           setReloadDeltaPaths(new Set());
           setItemVersionByKey({});
-          setReviewComments(getReviewCommentsFromState(orderedState));
+          setReviewComments((current) =>
+            mergeReviewComments(
+              getReviewCommentsFromState(orderedState),
+              current.filter((comment) => !comment.isReadOnly),
+            ),
+          );
           setViewed(nextViewed);
           setCollapsed(getCollapsedViewedPaths(orderedState.files, nextViewed));
           setExpandedReviewKeys(new Set());
@@ -1469,7 +1600,12 @@ export default function App() {
           setCollapsed(new Set(nextCollapsed));
           setExpandedReviewKeys(new Set(nextExpandedReviewKeys));
           setItemVersionByKey({});
-          setReviewComments(session?.reviewComments ?? getReviewCommentsFromState(orderedState));
+          setReviewComments(
+            mergeReviewComments(
+              getReviewCommentsFromState(orderedState),
+              session?.reviewComments ?? [],
+            ),
+          );
           setReloadDeltaPaths(new Set());
           setViewed(nextViewed);
           setSelectedPath(nextSelectedPath);
@@ -1975,6 +2111,7 @@ export default function App() {
           onSelectSource={selectSource}
           onShareWalkthrough={enabledShareWalkthrough}
           onToggleCommitView={showPlainCommitView ? closeCommitView : openCommitView}
+          pendingCommentCountBySource={pendingCommentCountBySource}
           pullRequestSource={historySource?.type === 'pull-request' ? historySource : null}
           reloadDeltaPaths={reloadDeltaPaths}
           searchQuery={sidebarMode === 'history' ? historySearchQuery : fileSearchQuery}

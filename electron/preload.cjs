@@ -37,6 +37,7 @@ const codiff = {
   getRepositoryHistory: (limit, source) =>
     ipcRenderer.invoke('codiff:getRepositoryHistory', limit, source),
   getRepositoryState: (source) => ipcRenderer.invoke('codiff:getRepositoryState', source),
+  getReviewDrafts: () => ipcRenderer.invoke('codiff:getReviewDrafts'),
   getTerminalHelperStatus: () => ipcRenderer.invoke('codiff:getTerminalHelperStatus'),
   getUpdateStatus: () => ipcRenderer.invoke('codiff:getUpdateStatus'),
   getNarrativeWalkthrough: (source, options) =>
@@ -51,6 +52,10 @@ const codiff = {
     const listener = (_event, nextConfig) => callback(nextConfig);
     ipcRenderer.on('codiff:configChanged', listener);
     return () => ipcRenderer.removeListener('codiff:configChanged', listener);
+  },
+  onClearReviewDraftsRequest: (callback) => {
+    ipcRenderer.on('codiff:clearReviewDraftsRequest', callback);
+    return () => ipcRenderer.removeListener('codiff:clearReviewDraftsRequest', callback);
   },
   onCopyPendingCommentsRequest: (callback) => {
     /** @param {Electron.IpcRendererEvent} _event @param {number} requestId */
@@ -147,6 +152,8 @@ const codiff = {
   resetCodeFontSize: () => ipcRenderer.invoke('codiff:resetCodeFontSize'),
   saveMarkdownDocument: (request) => ipcRenderer.invoke('codiff:saveMarkdownDocument', request),
   savePlanReview: (review) => ipcRenderer.invoke('codiff:savePlanReview', review),
+  saveReviewDrafts: (snapshot) => ipcRenderer.invoke('codiff:saveReviewDrafts', snapshot),
+  clearReviewDrafts: () => ipcRenderer.invoke('codiff:clearReviewDrafts'),
   showInFolder: (path) => ipcRenderer.invoke('codiff:showInFolder', path),
   submitPullRequestComment: (request) =>
     ipcRenderer.invoke('codiff:submitPullRequestComment', request),

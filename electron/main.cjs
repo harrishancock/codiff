@@ -115,6 +115,7 @@ const {
 const { getPlanReviewPath, readPlanReview, writePlanReview } = require('./plan-review.cjs');
 const { createSharedPlanSnapshot } = require('./shared-plan.cjs');
 const { createWalkthroughProgressReporter } = require('./walkthrough-progress.cjs');
+const { createReviewDraftStore, getReviewDraftDatabasePath } = require('./review-draft-store.cjs');
 
 /**
  * @typedef {import('../core/config/types.ts').CodiffConfig} CodiffConfig
@@ -152,6 +153,12 @@ const openWindows = new Set();
 const pendingCommentsClipboardController = createPendingCommentsClipboardController({ clipboard });
 /** @type {CodiffConfig} */
 let config = createDefaultConfig();
+let reviewDraftStore;
+
+const getReviewDraftStore = () => {
+  reviewDraftStore ??= createReviewDraftStore(getReviewDraftDatabasePath(app.getPath('userData')));
+  return reviewDraftStore;
+};
 
 /**
  * @type {Map<string, ReturnType<typeof createSkillInstaller>>}
@@ -800,6 +807,14 @@ const buildApplicationMenu = () =>
                 label: 'Copy All Comments on Close',
                 type: 'checkbox',
               },
+              {
+                click: (_menuItem, browserWindow) => {
+                  if (browserWindow instanceof BrowserWindow) {
+                    browserWindow.webContents.send('codiff:clearReviewDraftsRequest');
+                  }
+                },
+                label: 'Clear All Staged Comments…',
+              },
             ],
           },
           {
@@ -1446,6 +1461,21 @@ ipcMain.handle('codiff:getRepositoryState', async (event, source) => {
   void resetRepositoryWatcher(event.sender.id, state.root);
   return state;
 });
+
+ipcMain.handle('codiff:getReviewDrafts', (event) =>
+  getReviewDraftStore().loadRepository(getWindowRepositoryRoot(event.sender.id)),
+);
+
+ipcMain.handle('codiff:saveReviewDrafts', (event, snapshot) =>
+  getReviewDraftStore().saveSource({
+    ...snapshot,
+    repositoryRoot: getWindowRepositoryRoot(event.sender.id),
+  }),
+);
+
+ipcMain.handle('codiff:clearReviewDrafts', (event) =>
+  getReviewDraftStore().clearRepository(getWindowRepositoryRoot(event.sender.id)),
+);
 
 ipcMain.handle('codiff:resolvePullRequestUrl', (event, value) => {
   const input = typeof value === 'string' ? value.trim() : '';

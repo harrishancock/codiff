@@ -1,5 +1,6 @@
 import type { NativeKeyboardLayout } from './config/keyboard-layout.ts';
 import type { CodiffConfig } from './config/types.ts';
+import type { ReviewComment } from './lib/app-types.ts';
 import type {
   AgentSkillStatus,
   CodiffFeatureFlags,
@@ -47,6 +48,7 @@ declare global {
     codiff: {
       applyUpdate: () => Promise<CodiffUpdateStatus>;
       askReviewAssistant: (request: ReviewAssistantRequest) => Promise<ReviewAssistantResult>;
+      clearReviewDrafts?: () => Promise<number>;
       completePlan: (review: PlanReview, status: PlanHandoffStatus) => Promise<void>;
       createWalkthroughCommit: (
         request: WalkthroughCommitRequest,
@@ -74,6 +76,14 @@ declare global {
       getPreferences: () => Promise<CodiffPreferences>;
       getRepositoryHistory: (limit?: number, source?: ReviewSource) => Promise<RepositoryHistory>;
       getRepositoryState: (source?: ReviewSource) => Promise<RepositoryState>;
+      getReviewDrafts?: () => Promise<
+        ReadonlyArray<{
+          comments: ReadonlyArray<ReviewComment>;
+          revision: number;
+          source: ReviewSource;
+          sourceKey: string;
+        }>
+      >;
       getTerminalHelperStatus: () => Promise<TerminalHelperStatus>;
       getUpdateStatus: () => Promise<CodiffUpdateStatus>;
       increaseCodeFontSize: () => Promise<void>;
@@ -81,6 +91,7 @@ declare global {
       installTerminalHelper: () => Promise<TerminalHelperStatus>;
       isWindowFullScreen: () => Promise<boolean>;
       markPlanReady: () => Promise<void>;
+      onClearReviewDraftsRequest?: (callback: () => void) => () => void;
       onConfigChanged: (callback: (config: CodiffConfig) => void) => () => void;
       onCopyPendingCommentsRequest: (callback: () => string | Promise<string>) => () => void;
       onFindInDiffs: (callback: () => void) => () => void;
@@ -110,6 +121,12 @@ declare global {
         request: SaveMarkdownDocumentRequest,
       ) => Promise<SaveMarkdownDocumentResult>;
       savePlanReview: (review: PlanReview) => Promise<PlanReview>;
+      saveReviewDrafts?: (snapshot: {
+        comments: ReadonlyArray<ReviewComment>;
+        revision: number;
+        source: ReviewSource;
+        sourceKey: string;
+      }) => Promise<boolean>;
       setDiffStyle: (value: CodiffPreferences['diffStyle']) => Promise<void>;
       setShowOutdated: (value: boolean) => Promise<void>;
       setWordWrap: (value: boolean) => Promise<void>;

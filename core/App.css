@@ -1468,9 +1468,26 @@ html[data-codiff-platform='darwin'] .sidebar {
 }
 
 .history-entry-subject {
+  align-items: center;
+  display: flex;
+  gap: 6px;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.history-entry-subject > span:first-child {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
+}
+
+.history-entry-comment-count {
+  align-items: center;
+  color: var(--text-secondary, color-mix(in srgb, var(--text) 55%, transparent));
+  display: inline-flex;
+  flex: none;
+  font: 600 10px/1 var(--font-sans);
+  gap: 2px;
 }
 
 .history-entry-ref {

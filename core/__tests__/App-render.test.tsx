@@ -121,6 +121,7 @@ const createCodiffMock = (overrides: Partial<Window['codiff']> = {}): Window['co
     reason: 'Unavailable in tests.',
     status: 'unavailable' as const,
   })),
+  clearReviewDrafts: vi.fn(async () => 0),
   completePlan: vi.fn(async () => {}),
   createWalkthroughCommit: vi.fn(async () => ({
     hash: '0000000000000000000000000000000000000000',
@@ -198,6 +199,7 @@ const createCodiffMock = (overrides: Partial<Window['codiff']> = {}): Window['co
     root: '/repo',
   })),
   getRepositoryState: vi.fn(async () => repositoryState),
+  getReviewDrafts: vi.fn(async () => []),
   getTerminalHelperStatus: vi.fn(async () => ({
     command: 'codiff',
     installed: true,
@@ -219,6 +221,7 @@ const createCodiffMock = (overrides: Partial<Window['codiff']> = {}): Window['co
   })),
   isWindowFullScreen: vi.fn(async () => false),
   markPlanReady: vi.fn(async () => {}),
+  onClearReviewDraftsRequest: vi.fn(() => () => {}),
   onConfigChanged: vi.fn(() => () => {}),
   onCopyPendingCommentsRequest: vi.fn(() => () => {}),
   onFindInDiffs: vi.fn(() => () => {}),
@@ -249,6 +252,7 @@ const createCodiffMock = (overrides: Partial<Window['codiff']> = {}): Window['co
     status: 'saved' as const,
   })),
   savePlanReview: vi.fn(async (review) => review),
+  saveReviewDrafts: vi.fn(async () => true),
   setDiffStyle: vi.fn(async () => {}),
   setShowOutdated: vi.fn(async () => {}),
   setWordWrap: vi.fn(async () => {}),
@@ -328,6 +332,81 @@ const dispatchModifiedKey = (key: string, shiftKey = false) => {
     new KeyboardEvent('keydown', { ctrlKey: !isMac, key, metaKey: isMac, shiftKey }),
   );
 };
+
+test('restores durable review drafts and writes later revisions', async () => {
+  const saveReviewDrafts = vi.fn(async () => true);
+  window.codiff = createCodiffMock({
+    getRepositoryHistory: vi.fn(async () => ({
+      entries: [
+        {
+          author: 'Reviewer',
+          committedAt: Date.now(),
+          parents: [],
+          ref: 'abc123',
+          subject: 'Commented commit',
+        },
+      ],
+      root: '/repo',
+    })),
+    getReviewDrafts: vi.fn(async () => [
+      {
+        comments: [
+          {
+            body: 'Restored draft.',
+            filePath: 'src/app.ts',
+            id: 'draft-1',
+            lineNumber: 4,
+            sectionId: 'src/app.ts:unstaged:1',
+            side: 'additions' as const,
+          },
+        ],
+        revision: 7,
+        source: { type: 'working-tree' as const },
+        sourceKey: 'working-tree',
+      },
+      {
+        comments: [
+          {
+            body: 'Draft on another commit.',
+            filePath: 'src/other.ts',
+            id: 'draft-2',
+            lineNumber: 8,
+            sectionId: 'src/other.ts:commit:1',
+            side: 'deletions' as const,
+          },
+        ],
+        revision: 3,
+        source: { ref: 'abc123', type: 'commit' as const },
+        sourceKey: 'commit:abc123',
+      },
+    ]),
+    saveReviewDrafts,
+  });
+
+  await using view = await renderReact(<App />);
+  await waitFor(() => expect(saveReviewDrafts).toHaveBeenCalled());
+  expect(saveReviewDrafts).toHaveBeenLastCalledWith(
+    expect.objectContaining({
+      comments: [expect.objectContaining({ body: 'Restored draft.', id: 'draft-1' })],
+      revision: 8,
+      sourceKey: 'working-tree',
+    }),
+  );
+  expect(view.container.querySelector('.copy-comments-button')?.textContent).toBe('All (2)');
+  expect(view.container.querySelector('.history-entry-comment-count')?.textContent).toBe('1');
+});
+
+test('loads with an older preload bridge after a local renderer rebuild', async () => {
+  const codiff = createCodiffMock() as Partial<Window['codiff']>;
+  delete codiff.clearReviewDrafts;
+  delete codiff.getReviewDrafts;
+  delete codiff.onClearReviewDraftsRequest;
+  delete codiff.saveReviewDrafts;
+  window.codiff = codiff as Window['codiff'];
+
+  await using view = await renderReact(<App />);
+  await waitFor(() => expect(view.container.textContent).toContain('No local changes'));
+});
 
 const renderAppForOpenFileShortcut = async (file: ChangedFile) => {
   const openFile = vi.fn(async () => {});
