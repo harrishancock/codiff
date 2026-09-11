@@ -3,7 +3,7 @@
  */
 
 import { expect, test } from 'vite-plus/test';
-import { CopyCommentsButton } from '../app/components/Panels.tsx';
+import { CopyAllCommentsButton, CopyCommentsButton } from '../app/components/Panels.tsx';
 import type { ReviewComment } from '../lib/app-types.ts';
 import { createChangedFile } from './helpers/fixtures.ts';
 import { renderReact } from './helpers/react.tsx';
@@ -73,4 +73,14 @@ test('shows the pending comment count next to the copy icon', async () => {
   expect(button?.getAttribute('title')).toBe('Copy review comments as markdown');
   expect(button?.querySelector('.copy-comments-count')?.textContent).toBe('2');
   expect(button?.querySelector('.copy-comments-icon')).not.toBeNull();
+});
+
+test('shows the total pending comment count on the copy-all button', async () => {
+  await using app = await renderReact(
+    <CopyAllCommentsButton commentCount={17} getJSON={() => '[]'} />,
+  );
+
+  const button = app.container.querySelector<HTMLButtonElement>('.copy-comments-button');
+  expect(button?.getAttribute('aria-label')).toBe('Copy all 17 review comments as JSON');
+  expect(button?.textContent).toBe('All (17)');
 });

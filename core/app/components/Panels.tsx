@@ -437,6 +437,38 @@ export function CopyCommentsButton({
   );
 }
 
+export function CopyAllCommentsButton({
+  commentCount,
+  getJSON,
+}: {
+  commentCount: number;
+  getJSON: () => string;
+}) {
+  const [copied, markCopied] = useCopiedState(2000);
+
+  const copyComments = useCallback(async () => {
+    await navigator.clipboard.writeText(getJSON());
+    markCopied();
+  }, [getJSON, markCopied]);
+
+  return (
+    <button
+      aria-label={`Copy all ${commentCount} review ${commentCount === 1 ? 'comment' : 'comments'} as JSON`}
+      className={`copy-comments-button${copied ? ' copied' : ''}`}
+      onClick={() => void copyComments()}
+      title="Copy all review comments as JSON"
+      type="button"
+    >
+      {copied ? (
+        <Check aria-hidden className="copy-comments-icon check" size={15} weight="bold" />
+      ) : (
+        <LucideCopy aria-hidden className="copy-comments-icon" size={14} strokeWidth={2.25} />
+      )}
+      <span className="copy-comments-count">All ({commentCount})</span>
+    </button>
+  );
+}
+
 const getPullRequestReviewActionStatus = (
   reviewStatus: PullRequestReviewStatus | undefined,
   event: PullRequestReviewEvent,

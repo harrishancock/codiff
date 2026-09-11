@@ -1,13 +1,15 @@
 import { expect, test } from 'vite-plus/test';
 import type { ReviewComment } from '../lib/app-types.ts';
 import {
+  buildAllReviewCommentsJSON,
   findReusableReviewCommentDraft,
   getPendingPullRequestReviewComments,
+  getPendingReviewCommentCount,
   getReviewCommentsFromState,
   getVisibleReviewComments,
   mergeReviewComments,
-  toSubmittedReviewComment,
   toPullRequestReviewComment,
+  toSubmittedReviewComment,
 } from '../lib/review-comments.ts';
 import type { RepositoryState } from '../types.ts';
 
@@ -20,6 +22,8 @@ const createReviewComment = (overrides: Partial<ReviewComment>): ReviewComment =
   side: 'additions',
   ...overrides,
 });
+
+const createSourceSession = (reviewComments: ReadonlyArray<ReviewComment>) => ({ reviewComments });
 
 const createPullRequestState = (): RepositoryState => ({
   branch: null,
@@ -72,6 +76,57 @@ test('getReviewCommentsFromState carries the outdated flag through to review com
   expect(comments).toHaveLength(2);
   expect(comments.find((comment) => comment.id === 'github:1')?.isOutdated).toBe(true);
   expect(comments.find((comment) => comment.id === 'github:2')?.isOutdated).toBeUndefined();
+});
+
+test('buildAllReviewCommentsJSON exports pending comments grouped by source', () => {
+  const sessions = new Map([
+    [
+      'commit:old',
+      createSourceSession([
+        createReviewComment({
+          body: '  Keep this body.  ',
+          id: 'old-comment',
+          startLineNumber: 3,
+          startSide: 'additions',
+        }),
+        createReviewComment({ body: '   ', id: 'empty-comment' }),
+        createReviewComment({ id: 'published-comment', isReadOnly: true }),
+      ]),
+    ],
+    ['commit:empty', createSourceSession([])],
+  ]);
+
+  expect(buildAllReviewCommentsJSON(sessions)).toBe(
+    JSON.stringify(
+      [
+        {
+          comments: [
+            {
+              body: '  Keep this body.  ',
+              filePath: 'src/a.ts',
+              lineNumber: 5,
+              side: 'additions',
+              startLineNumber: 3,
+              startSide: 'additions',
+            },
+          ],
+          source: 'commit:old',
+        },
+      ],
+      null,
+      2,
+    ),
+  );
+});
+
+test('getPendingReviewCommentCount excludes empty and read-only comments', () => {
+  expect(
+    getPendingReviewCommentCount([
+      createReviewComment({ id: 'pending' }),
+      createReviewComment({ body: '   ', id: 'empty' }),
+      createReviewComment({ id: 'read-only', isReadOnly: true }),
+    ]),
+  ).toBe(1);
 });
 
 test('getReviewCommentsFromState hydrates shared comments on their exact working-tree section', () => {

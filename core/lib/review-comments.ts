@@ -5,7 +5,7 @@ import type {
   PullRequestReviewComment,
   RepositoryState,
 } from '../types.ts';
-import type { CodeViewInstance, ReviewComment } from './app-types.ts';
+import type { CodeViewInstance, ReviewComment, SourceSession } from './app-types.ts';
 import { parseSectionDiffWithOptions } from './diff.ts';
 
 export const isInteractiveReviewEvent = (event: PointerEvent) =>
@@ -428,6 +428,32 @@ export const buildReviewCommentsMarkdown = (
     prefix == null ? '# Address these Review Comments\n\n' : prefix ? `${prefix}\n\n` : '';
   return markdown ? `${resolvedPrefix}${markdown}` : '';
 };
+
+export const buildAllReviewCommentsJSON = (
+  sessions: ReadonlyMap<string, Pick<SourceSession, 'reviewComments'>>,
+) =>
+  JSON.stringify(
+    [...sessions]
+      .map(([source, session]) => ({
+        comments: session.reviewComments
+          .filter((comment) => !comment.isReadOnly && comment.body.trim())
+          .map((comment) => ({
+            body: comment.body,
+            filePath: comment.filePath,
+            lineNumber: comment.lineNumber,
+            side: comment.side,
+            startLineNumber: comment.startLineNumber,
+            startSide: comment.startSide,
+          })),
+        source,
+      }))
+      .filter(({ comments }) => comments.length),
+    null,
+    2,
+  );
+
+export const getPendingReviewCommentCount = (comments: ReadonlyArray<ReviewComment>) =>
+  comments.filter((comment) => !comment.isReadOnly && comment.body.trim()).length;
 
 export const getReviewCommentsFromState = (state: RepositoryState): ReadonlyArray<ReviewComment> =>
   (state.reviewComments ?? []).flatMap((comment) => {

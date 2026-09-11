@@ -10,6 +10,7 @@ import { OpenReviewSourceDialog } from './app/components/OpenReviewSourceDialog.
 import { OpenReviewSourceMenu } from './app/components/OpenReviewSourceMenu.tsx';
 import {
   AgentUnavailablePanel,
+  CopyAllCommentsButton,
   CopyCommentsButton,
   DiffSearchPanel,
   FirstRunPanel,
@@ -84,7 +85,9 @@ import {
 } from './lib/reload-selection.ts';
 import { resolveReviewCommandTarget } from './lib/review-command-target.ts';
 import {
+  buildAllReviewCommentsJSON,
   buildReviewCommentsMarkdown,
+  getPendingReviewCommentCount,
   getReviewCommentsFromState,
   getVisibleReviewComments,
 } from './lib/review-comments.ts';
@@ -199,6 +202,9 @@ export default function App() {
   const [fileSearchQuery, setFileSearchQuery] = useState('');
   const [historySearchQuery, setHistorySearchQuery] = useState('');
   const [isWindowFullScreen, setIsWindowFullScreen] = useState(false);
+  const [pendingCommentCountBySource, setPendingCommentCountBySource] = useState<
+    ReadonlyMap<string, number>
+  >(new Map());
   const [pendingSource, setPendingSource] = useState<ReviewSource | null>(null);
   const [planDocument, setPlanDocument] = useState<CodiffMarkdownDocument | null>(null);
   const [planLoadError, setPlanLoadError] = useState<string | null>(null);
@@ -596,7 +602,8 @@ export default function App() {
       return;
     }
 
-    sourceSessionsRef.current.set(getSourceKey(currentState.source), {
+    const sourceKey = getSourceKey(currentState.source);
+    sourceSessionsRef.current.set(sourceKey, {
       collapsed: new Set(collapsedRef.current),
       expandedReviewKeys: new Set(expandedReviewKeysRef.current),
       narrativeWalkthrough: narrativeWalkthroughRef.current,
@@ -610,7 +617,28 @@ export default function App() {
         status,
       })),
     });
+    setPendingCommentCountBySource((current) => {
+      const next = new Map(current);
+      next.set(sourceKey, getPendingReviewCommentCount(reviewCommentsRef.current));
+      return next;
+    });
   }, [narrativeWalkthroughRef, reviewCommentsRef, walkthroughErrorRef]);
+
+  const getAllReviewCommentsJSON = useCallback(() => {
+    const currentState = stateRef.current;
+    const sessions = new Map<string, Pick<SourceSession, 'reviewComments'>>(
+      [...sourceSessionsRef.current].map(([source, session]) => [
+        source,
+        { reviewComments: session.reviewComments },
+      ]),
+    );
+    if (currentState) {
+      sessions.set(getSourceKey(currentState.source), {
+        reviewComments: reviewCommentsRef.current,
+      });
+    }
+    return buildAllReviewCommentsJSON(sessions);
+  }, [reviewCommentsRef]);
 
   useEffect(() => {
     let canceled = false;
@@ -1664,6 +1692,13 @@ export default function App() {
     );
   }
 
+  const currentSourceKey = getSourceKey(state.source);
+  const allReviewCommentCount =
+    getPendingReviewCommentCount(reviewComments) +
+    [...pendingCommentCountBySource].reduce(
+      (count, [source, sourceCount]) => (source === currentSourceKey ? count : count + sourceCount),
+      0,
+    );
   const selectedOrSearchPath = activeDiffSearchMatch?.filePath ?? selectedPath;
   const visibleSelectedPath =
     selectedOrSearchPath && visibleFiles.some((file) => file.path === selectedOrSearchPath)
@@ -1820,12 +1855,18 @@ export default function App() {
       <div aria-hidden className="window-drag-region" />
       <ReviewTopBar
         actions={
-          <CopyCommentsButton
-            comments={isSwitchingSource ? emptyReviewComments : reviewComments}
-            files={orderedFiles}
-            reviewCommentsPrefix={preferences.reviewCommentsPrefix}
-            showWhitespace={showWhitespace}
-          />
+          <>
+            <CopyAllCommentsButton
+              commentCount={allReviewCommentCount}
+              getJSON={getAllReviewCommentsJSON}
+            />
+            <CopyCommentsButton
+              comments={isSwitchingSource ? emptyReviewComments : reviewComments}
+              files={orderedFiles}
+              reviewCommentsPrefix={preferences.reviewCommentsPrefix}
+              showWhitespace={showWhitespace}
+            />
+          </>
         }
         context={
           <>
