@@ -41,6 +41,10 @@ function AppKeyboardShortcutsHarness({
 }
 
 test('app commands register the complete command set and delegate dynamic actions', async () => {
+  Object.defineProperty(navigator, 'clipboard', {
+    configurable: true,
+    value: { writeText: vi.fn(() => Promise.resolve()) },
+  });
   const file = createChangedFile('src/app.ts');
   const source = { type: 'working-tree' } as const;
   const target = createReviewCommandTarget(source, file);
@@ -67,6 +71,7 @@ test('app commands register the complete command set and delegate dynamic action
   const changeSidebarMode = vi.fn();
   const focusFileFilter = vi.fn();
   const getReviewCommandTarget = vi.fn(() => target);
+  const getAllReviewCommentsJSON = vi.fn(() => '[{"source":"working-tree"}]');
   const onOpenDiffSearch = vi.fn();
   const onOpenReviewSource = vi.fn();
   const onOpenSelectedFile = vi.fn();
@@ -81,6 +86,7 @@ test('app commands register the complete command set and delegate dynamic action
       options={{
         changeSidebarMode,
         focusFileFilter,
+        getAllReviewCommentsJSON,
         getReviewCommandTarget,
         onOpenDiffSearch,
         onOpenReviewSource,
@@ -90,7 +96,6 @@ test('app commands register the complete command set and delegate dynamic action
         onToggleViewed,
         onToggleWordWrap,
         preferencesRef,
-        reviewCommentsRef: { current: [] },
         stateRef,
         viewedRef,
       }}
@@ -139,6 +144,7 @@ test('app commands register the complete command set and delegate dynamic action
   command('toggle-word-wrap').execute();
   command('reload').execute();
   command('toggle-viewed').execute();
+  command('copy-comments').execute();
   expect(focusFileFilter).toHaveBeenCalledOnce();
   expect(onOpenDiffSearch).toHaveBeenCalledOnce();
   expect(onOpenReviewSource.mock.calls).toEqual([['pull-request'], ['commit'], ['branch']]);
@@ -149,6 +155,9 @@ test('app commands register the complete command set and delegate dynamic action
   expect(onRefreshRepository).toHaveBeenCalledOnce();
   expect(command('open-file').description?.()).toBe(file.path);
   expect(onToggleViewed).toHaveBeenCalledWith(file, true, target.reviewIdentity);
+  expect(command('copy-comments').title).toBe('Copy All Review Comments');
+  expect(getAllReviewCommentsJSON).toHaveBeenCalledOnce();
+  expect(navigator.clipboard.writeText).toHaveBeenCalledWith('[{"source":"working-tree"}]');
   expect(command('toggle-word-wrap').description?.()).toBe('Enable Word Wrap');
   preferencesRef.current.wordWrap = true;
   expect(command('toggle-word-wrap').description?.()).toBe('Disable Word Wrap');

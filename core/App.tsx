@@ -11,7 +11,6 @@ import { OpenReviewSourceMenu } from './app/components/OpenReviewSourceMenu.tsx'
 import {
   AgentUnavailablePanel,
   CopyAllCommentsButton,
-  CopyCommentsButton,
   DiffSearchPanel,
   FirstRunPanel,
   isPullRequestReviewActionDisabled,
@@ -59,7 +58,6 @@ import {
 import {
   type CodeViewInstance,
   type RepositoryLoadError,
-  type ReviewComment,
   type ReviewIdentity,
   type ReviewScrollBehavior,
   type ReviewScrollTarget,
@@ -86,7 +84,6 @@ import {
 import { resolveReviewCommandTarget } from './lib/review-command-target.ts';
 import {
   buildAllReviewCommentsJSON,
-  buildReviewCommentsMarkdown,
   getPendingReviewCommentCount,
   getReviewCommentsFromState,
   getVisibleReviewComments,
@@ -128,7 +125,6 @@ import type {
   DiffSection,
 } from './types.ts';
 
-const emptyReviewComments: ReadonlyArray<ReviewComment> = [];
 const emptyWalkthroughNotes = new Map<string, WalkthroughNote>();
 const disableCodeViewWorkerPool = process.env.NODE_ENV === 'test';
 
@@ -1171,20 +1167,11 @@ export default function App() {
 
   useEffect(() => {
     const removeListener = window.codiff.onCopyPendingCommentsRequest(() => {
-      const currentState = stateRef.current;
-      if (!currentState) {
-        return '';
-      }
-
-      return buildReviewCommentsMarkdown(
-        currentState.files,
-        reviewCommentsRef.current,
-        preferencesRef.current.showWhitespace,
-        preferencesRef.current.reviewCommentsPrefix,
-      );
+      const json = getAllReviewCommentsJSON();
+      return json === '[]' ? '' : json;
     });
     return removeListener;
-  }, [reviewCommentsRef]);
+  }, [getAllReviewCommentsJSON]);
 
   useEffect(() => {
     void window.codiff.isWindowFullScreen().then(setIsWindowFullScreen, () => {});
@@ -1563,6 +1550,7 @@ export default function App() {
   const commandBarCommands = useAppCommands({
     changeSidebarMode,
     focusFileFilter,
+    getAllReviewCommentsJSON,
     getReviewCommandTarget,
     onOpenDiffSearch: openDiffSearch,
     onOpenReviewSource: showOpenReviewSourceDialog,
@@ -1572,7 +1560,6 @@ export default function App() {
     onToggleViewed: toggleViewed,
     onToggleWordWrap: toggleWordWrap,
     preferencesRef,
-    reviewCommentsRef,
     stateRef,
     viewedRef,
   });
@@ -1855,18 +1842,10 @@ export default function App() {
       <div aria-hidden className="window-drag-region" />
       <ReviewTopBar
         actions={
-          <>
-            <CopyAllCommentsButton
-              commentCount={allReviewCommentCount}
-              getJSON={getAllReviewCommentsJSON}
-            />
-            <CopyCommentsButton
-              comments={isSwitchingSource ? emptyReviewComments : reviewComments}
-              files={orderedFiles}
-              reviewCommentsPrefix={preferences.reviewCommentsPrefix}
-              showWhitespace={showWhitespace}
-            />
-          </>
+          <CopyAllCommentsButton
+            commentCount={allReviewCommentCount}
+            getJSON={getAllReviewCommentsJSON}
+          />
         }
         context={
           <>

@@ -21,10 +21,8 @@ import {
 } from 'react';
 import { matchesShortcut } from '../../config/keymap.ts';
 import type { CodiffKeymap } from '../../config/types.ts';
-import type { RepositoryLoadError, ReviewComment } from '../../lib/app-types.ts';
-import { buildReviewCommentsMarkdown } from '../../lib/review-comments.ts';
+import type { RepositoryLoadError } from '../../lib/app-types.ts';
 import type {
-  ChangedFile,
   CodiffUpdateStatus,
   PullRequestMergeOptions,
   PullRequestMergeState,
@@ -381,62 +379,6 @@ export function DiffSearchPanel({
   );
 }
 
-export function CopyCommentsButton({
-  comments,
-  files,
-  reviewCommentsPrefix,
-  showWhitespace,
-}: {
-  comments: ReadonlyArray<ReviewComment>;
-  files: ReadonlyArray<ChangedFile>;
-  reviewCommentsPrefix: string;
-  showWhitespace: boolean;
-}) {
-  const [copied, markCopied] = useCopiedState(2000);
-  const pendingCommentCount = comments.filter(
-    (comment) => !comment.isReadOnly && comment.body.trim(),
-  ).length;
-
-  const copyComments = useCallback(async () => {
-    const markdown = buildReviewCommentsMarkdown(
-      files,
-      comments,
-      showWhitespace,
-      reviewCommentsPrefix,
-    );
-    if (!markdown) {
-      return;
-    }
-
-    await navigator.clipboard.writeText(markdown);
-    markCopied();
-  }, [comments, files, markCopied, reviewCommentsPrefix, showWhitespace]);
-
-  return (
-    <button
-      aria-label={
-        pendingCommentCount === 0
-          ? 'Copy review comments as markdown, no comments yet'
-          : `Copy ${pendingCommentCount} review ${
-              pendingCommentCount === 1 ? 'comment' : 'comments'
-            }`
-      }
-      className={`copy-comments-button${copied ? ' copied' : ''}`}
-      disabled={pendingCommentCount === 0}
-      onClick={() => void copyComments()}
-      title="Copy review comments as markdown"
-      type="button"
-    >
-      {copied ? (
-        <Check aria-hidden className="copy-comments-icon check" size={15} weight="bold" />
-      ) : (
-        <LucideCopy aria-hidden className="copy-comments-icon" size={14} strokeWidth={2.25} />
-      )}
-      <span className="copy-comments-count">{pendingCommentCount}</span>
-    </button>
-  );
-}
-
 export function CopyAllCommentsButton({
   commentCount,
   getJSON,
@@ -453,8 +395,13 @@ export function CopyAllCommentsButton({
 
   return (
     <button
-      aria-label={`Copy all ${commentCount} review ${commentCount === 1 ? 'comment' : 'comments'} as JSON`}
+      aria-label={
+        commentCount === 0
+          ? 'Copy all review comments as JSON, no comments yet'
+          : `Copy all ${commentCount} review ${commentCount === 1 ? 'comment' : 'comments'} as JSON`
+      }
       className={`copy-comments-button${copied ? ' copied' : ''}`}
+      disabled={commentCount === 0}
       onClick={() => void copyComments()}
       title="Copy all review comments as JSON"
       type="button"

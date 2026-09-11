@@ -797,7 +797,7 @@ const buildApplicationMenu = () =>
                     settings: { ...config.settings, copyCommentsOnClose: menuItem.checked },
                   });
                 },
-                label: 'Copy Comments on Close',
+                label: 'Copy All Comments on Close',
                 type: 'checkbox',
               },
             ],
