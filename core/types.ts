@@ -251,6 +251,12 @@ export type RepositoryState = {
   source: ReviewSource;
 };
 
+export type ReviewScope = {
+  key: string;
+  label: string;
+  type: 'branch' | 'legacy' | 'pull-request' | 'source';
+};
+
 export type CodiffFeatureFlags = {
   planSharing: boolean;
   walkthroughSharing: boolean;

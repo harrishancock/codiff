@@ -102,6 +102,7 @@ import {
   getEmptySourceTitle,
   getHistorySource,
   getRefreshSource,
+  getReviewScope,
   getRepositoryLoadError,
   getSourceKey,
   getSourceLabel,
@@ -661,6 +662,7 @@ export default function App() {
       return;
     }
     const sourceKey = getSourceKey(currentState.source);
+    const scope = getReviewScope(currentState);
     setReviewDraftSourceByKey((current) => {
       if (current.get(sourceKey) === currentState.source) {
         return current;
@@ -674,6 +676,8 @@ export default function App() {
     void saveReviewDrafts({
       comments: reviewComments,
       revision,
+      scope,
+      scopeKey: scope.key,
       source: currentState.source,
       sourceKey,
     })
@@ -742,6 +746,7 @@ export default function App() {
         ...nextState,
         files: sortFiles(nextState.files),
       };
+      const activeReviewScope = getReviewScope(orderedState);
       const persistedDrafts = window.codiff.getReviewDrafts
         ? await window.codiff.getReviewDrafts().catch((error: unknown) => {
             window.alert(
@@ -757,7 +762,9 @@ export default function App() {
       reviewDraftRevisionBySourceRef.current.clear();
       const restoredCommentCounts = new Map<string, number>();
       const restoredSources = new Map<string, ReviewSource>();
-      for (const persisted of persistedDrafts) {
+      for (const persisted of persistedDrafts.filter(
+        (draft) => draft.scopeKey === activeReviewScope.key,
+      )) {
         reviewDraftRevisionBySourceRef.current.set(persisted.sourceKey, persisted.revision);
         restoredCommentCounts.set(
           persisted.sourceKey,

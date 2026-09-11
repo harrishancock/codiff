@@ -24,6 +24,7 @@ import type {
   RepositoryState,
   ReviewAssistantRequest,
   ReviewAssistantResult,
+  ReviewScope,
   ReviewSource,
   SaveMarkdownDocumentRequest,
   SaveMarkdownDocumentResult,
@@ -80,6 +81,8 @@ declare global {
         ReadonlyArray<{
           comments: ReadonlyArray<ReviewComment>;
           revision: number;
+          scope: ReviewScope;
+          scopeKey: string;
           source: ReviewSource;
           sourceKey: string;
         }>
@@ -124,6 +127,8 @@ declare global {
       saveReviewDrafts?: (snapshot: {
         comments: ReadonlyArray<ReviewComment>;
         revision: number;
+        scope: ReviewScope;
+        scopeKey: string;
         source: ReviewSource;
         sourceKey: string;
       }) => Promise<boolean>;

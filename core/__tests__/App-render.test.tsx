@@ -361,6 +361,8 @@ test('restores durable review drafts and writes later revisions', async () => {
           },
         ],
         revision: 7,
+        scope: { key: 'branch:main', label: 'main', type: 'branch' as const },
+        scopeKey: 'branch:main',
         source: { type: 'working-tree' as const },
         sourceKey: 'working-tree',
       },
@@ -376,6 +378,8 @@ test('restores durable review drafts and writes later revisions', async () => {
           },
         ],
         revision: 3,
+        scope: { key: 'branch:main', label: 'main', type: 'branch' as const },
+        scopeKey: 'branch:main',
         source: { ref: 'abc123', type: 'commit' as const },
         sourceKey: 'commit:abc123',
       },
@@ -391,8 +395,27 @@ test('restores durable review drafts and writes later revisions', async () => {
           },
         ],
         revision: 2,
+        scope: { key: 'branch:main', label: 'main', type: 'branch' as const },
+        scopeKey: 'branch:main',
         source: { ref: 'deadbeef', type: 'commit' as const },
         sourceKey: 'commit:deadbeef',
+      },
+      {
+        comments: [
+          {
+            body: 'Draft on another branch.',
+            filePath: 'src/branch.ts',
+            id: 'draft-4',
+            lineNumber: 1,
+            sectionId: 'src/branch.ts:commit:1',
+            side: 'additions' as const,
+          },
+        ],
+        revision: 1,
+        scope: { key: 'branch:other', label: 'other', type: 'branch' as const },
+        scopeKey: 'branch:other',
+        source: { ref: 'fedcba9', type: 'commit' as const },
+        sourceKey: 'commit:fedcba9',
       },
     ]),
     saveReviewDrafts,
@@ -411,6 +434,7 @@ test('restores durable review drafts and writes later revisions', async () => {
   expect(view.container.querySelector('.history-entry-comment-count')?.textContent).toBe('1');
   expect(view.container.textContent).toContain('Other drafts');
   expect(view.container.textContent).toContain('deadbee');
+  expect(view.container.textContent).not.toContain('fedcba9');
 });
 
 test('loads with an older preload bridge after a local renderer rebuild', async () => {

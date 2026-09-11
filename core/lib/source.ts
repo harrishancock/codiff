@@ -1,4 +1,4 @@
-import type { ReviewSource } from '../types.ts';
+import type { RepositoryState, ReviewScope, ReviewSource } from '../types.ts';
 import type { RepositoryLoadError } from './app-types.ts';
 import { abbreviateHomePath } from './files.ts';
 
@@ -89,6 +89,18 @@ export const getSourceKey = (source: ReviewSource) =>
             : source.type === 'pull-request'
               ? `pull-request:${source.provider ?? ''}:${source.host ?? ''}:${source.projectPath ?? `${source.owner ?? ''}/${source.repo ?? ''}`}#${source.number ?? source.url}`
               : 'working-tree';
+
+export const getReviewScope = (state: Pick<RepositoryState, 'branch' | 'source'>): ReviewScope => {
+  if (state.source.type === 'pull-request') {
+    const key = getSourceKey(state.source);
+    return { key, label: getSourceLabel(state.source), type: 'pull-request' };
+  }
+  if (state.branch) {
+    return { key: `branch:${state.branch}`, label: state.branch, type: 'branch' };
+  }
+  const sourceKey = getSourceKey(state.source);
+  return { key: `source:${sourceKey}`, label: getSourceLabel(state.source), type: 'source' };
+};
 
 const getErrorMessage = (error: unknown) =>
   error instanceof Error ? error.message : String(error);
