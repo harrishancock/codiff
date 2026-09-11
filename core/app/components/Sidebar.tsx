@@ -46,6 +46,7 @@ export function Sidebar({
   pendingCommentCountBySource,
   pullRequestSource,
   reloadDeltaPaths,
+  reviewDraftSourceByKey,
   searchQuery,
   selectedPath,
   shareWalkthroughDisabled,
@@ -76,6 +77,7 @@ export function Sidebar({
   pendingCommentCountBySource: ReadonlyMap<string, number>;
   pullRequestSource: PullRequestSource | null;
   reloadDeltaPaths: ReadonlySet<string>;
+  reviewDraftSourceByKey: ReadonlyMap<string, ReviewSource>;
   searchQuery: string;
   selectedPath: string | null;
   shareWalkthroughDisabled?: boolean;
@@ -141,6 +143,7 @@ export function Sidebar({
           onSelectSource={onSelectSource}
           pendingCommentCountBySource={pendingCommentCountBySource}
           pullRequestSource={pullRequestSource}
+          reviewDraftSourceByKey={reviewDraftSourceByKey}
           searchQuery={searchQuery}
         />
       ) : mode === 'walkthrough' && narrativeWalkthrough ? (
@@ -246,6 +249,7 @@ function HistorySidebar({
   onSelectSource,
   pendingCommentCountBySource,
   pullRequestSource,
+  reviewDraftSourceByKey,
   searchQuery,
 }: {
   branchSource: Extract<ReviewSource, { type: 'branch-diff' }> | null;
@@ -257,6 +261,7 @@ function HistorySidebar({
   onSelectSource: (source: ReviewSource) => void;
   pendingCommentCountBySource: ReadonlyMap<string, number>;
   pullRequestSource: PullRequestSource | null;
+  reviewDraftSourceByKey: ReadonlyMap<string, ReviewSource>;
   searchQuery: string;
 }) {
   const currentSourceKey = getSourceKey(currentSource);
@@ -396,6 +401,36 @@ function HistorySidebar({
       ...localRows,
     ].filter((row): row is NonNullable<typeof row> => row != null);
   }, [branchSource, entries, normalizedQuery, pullRequestSource]);
+  const visibleRows = useMemo(() => {
+    const representedSources = new Set(
+      rows.filter((row) => row.kind === 'entry').map((row) => row.key),
+    );
+    const otherDraftRows = [...pendingCommentCountBySource]
+      .filter(
+        ([sourceKey, count]) =>
+          count > 0 && !representedSources.has(sourceKey) && reviewDraftSourceByKey.has(sourceKey),
+      )
+      .map(([sourceKey]) => {
+        const source = reviewDraftSourceByKey.get(sourceKey)!;
+        return {
+          author: null,
+          committedAt: null,
+          gravatarUrl: undefined,
+          key: sourceKey,
+          kind: 'entry' as const,
+          ref: source.type === 'commit' ? source.ref : sourceKey,
+          source,
+          subject: 'Recovered review draft',
+        };
+      });
+    return otherDraftRows.length === 0
+      ? rows
+      : [
+          ...rows,
+          { key: 'history-section:other-drafts', kind: 'section' as const, label: 'Other drafts' },
+          ...otherDraftRows,
+        ];
+  }, [pendingCommentCountBySource, reviewDraftSourceByKey, rows]);
   const maybeLoadMore = useCallback(() => {
     const element = listRef.current;
     if (!element || loading || !hasMore || normalizedQuery) {
@@ -409,7 +444,7 @@ function HistorySidebar({
 
   return (
     <div className="history-list" onScroll={maybeLoadMore} ref={listRef}>
-      {rows.map((row) => {
+      {visibleRows.map((row) => {
         if (row.kind === 'section') {
           return (
             <div className="history-section" key={row.key}>

@@ -204,6 +204,9 @@ export default function App() {
   const [pendingCommentCountBySource, setPendingCommentCountBySource] = useState<
     ReadonlyMap<string, number>
   >(new Map());
+  const [reviewDraftSourceByKey, setReviewDraftSourceByKey] = useState<
+    ReadonlyMap<string, ReviewSource>
+  >(new Map());
   const [pendingSource, setPendingSource] = useState<ReviewSource | null>(null);
   const [planDocument, setPlanDocument] = useState<CodiffMarkdownDocument | null>(null);
   const [planLoadError, setPlanLoadError] = useState<string | null>(null);
@@ -658,6 +661,14 @@ export default function App() {
       return;
     }
     const sourceKey = getSourceKey(currentState.source);
+    setReviewDraftSourceByKey((current) => {
+      if (current.get(sourceKey) === currentState.source) {
+        return current;
+      }
+      const next = new Map(current);
+      next.set(sourceKey, currentState.source);
+      return next;
+    });
     const revision = (reviewDraftRevisionBySourceRef.current.get(sourceKey) ?? 0) + 1;
     reviewDraftRevisionBySourceRef.current.set(sourceKey, revision);
     void saveReviewDrafts({
@@ -745,12 +756,14 @@ export default function App() {
       sourceSessionsRef.current.clear();
       reviewDraftRevisionBySourceRef.current.clear();
       const restoredCommentCounts = new Map<string, number>();
+      const restoredSources = new Map<string, ReviewSource>();
       for (const persisted of persistedDrafts) {
         reviewDraftRevisionBySourceRef.current.set(persisted.sourceKey, persisted.revision);
         restoredCommentCounts.set(
           persisted.sourceKey,
           getPendingReviewCommentCount(persisted.comments),
         );
+        restoredSources.set(persisted.sourceKey, persisted.source);
         sourceSessionsRef.current.set(persisted.sourceKey, {
           collapsed: new Set(),
           expandedReviewKeys: new Set(),
@@ -763,6 +776,7 @@ export default function App() {
         });
       }
       setPendingCommentCountBySource(restoredCommentCounts);
+      setReviewDraftSourceByKey(restoredSources);
       reviewDraftRepositoryRootRef.current = orderedState.root;
       const nextHistorySource: ReviewSource | null =
         getReloadHistorySource(reloadSelection, orderedState) ??
@@ -965,6 +979,7 @@ export default function App() {
           sourceSessionsRef.current.clear();
           reviewDraftRevisionBySourceRef.current.clear();
           setPendingCommentCountBySource(new Map());
+          setReviewDraftSourceByKey(new Map());
           setReviewComments((current) => current.filter((comment) => comment.isReadOnly));
         })
         .catch((error: unknown) => {
@@ -2114,6 +2129,7 @@ export default function App() {
           pendingCommentCountBySource={pendingCommentCountBySource}
           pullRequestSource={historySource?.type === 'pull-request' ? historySource : null}
           reloadDeltaPaths={reloadDeltaPaths}
+          reviewDraftSourceByKey={reviewDraftSourceByKey}
           searchQuery={sidebarMode === 'history' ? historySearchQuery : fileSearchQuery}
           selectedPath={visibleSelectedPath}
           shareWalkthroughDisabled={walkthroughSharing}

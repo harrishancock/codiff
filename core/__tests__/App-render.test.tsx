@@ -379,6 +379,21 @@ test('restores durable review drafts and writes later revisions', async () => {
         source: { ref: 'abc123', type: 'commit' as const },
         sourceKey: 'commit:abc123',
       },
+      {
+        comments: [
+          {
+            body: 'Draft on rewritten HEAD.',
+            filePath: 'src/old.ts',
+            id: 'draft-3',
+            lineNumber: 3,
+            sectionId: 'src/old.ts:commit:1',
+            side: 'additions' as const,
+          },
+        ],
+        revision: 2,
+        source: { ref: 'deadbeef', type: 'commit' as const },
+        sourceKey: 'commit:deadbeef',
+      },
     ]),
     saveReviewDrafts,
   });
@@ -392,8 +407,10 @@ test('restores durable review drafts and writes later revisions', async () => {
       sourceKey: 'working-tree',
     }),
   );
-  expect(view.container.querySelector('.copy-comments-button')?.textContent).toBe('All (2)');
+  expect(view.container.querySelector('.copy-comments-button')?.textContent).toBe('All (3)');
   expect(view.container.querySelector('.history-entry-comment-count')?.textContent).toBe('1');
+  expect(view.container.textContent).toContain('Other drafts');
+  expect(view.container.textContent).toContain('deadbee');
 });
 
 test('loads with an older preload bridge after a local renderer rebuild', async () => {
