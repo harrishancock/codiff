@@ -435,6 +435,8 @@ test('restores durable review drafts and writes later revisions', async () => {
   expect(view.container.textContent).toContain('Other drafts');
   expect(view.container.textContent).toContain('deadbee');
   expect(view.container.textContent).not.toContain('fedcba9');
+  expect(view.container.textContent).toContain('Other review scopes');
+  expect(view.container.textContent).toContain('other');
 });
 
 test('loads with an older preload bridge after a local renderer rebuild', async () => {

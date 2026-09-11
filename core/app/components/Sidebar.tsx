@@ -25,6 +25,7 @@ import type { NarrativeNavigation } from './walkthrough/useNarrativeNavigation.t
 import { WalkthroughProgress } from './walkthrough/WalkthroughProgress.tsx';
 
 export function Sidebar({
+  activeReviewScopeKey,
   branchSource,
   commitFiles,
   commitViewOpen,
@@ -46,6 +47,7 @@ export function Sidebar({
   pendingCommentCountBySource,
   pullRequestSource,
   reloadDeltaPaths,
+  reviewDraftScopes,
   reviewDraftSourceByKey,
   searchQuery,
   selectedPath,
@@ -56,6 +58,7 @@ export function Sidebar({
   walkthroughLoading,
   walkthroughProgress,
 }: {
+  activeReviewScopeKey: string;
   branchSource: Extract<ReviewSource, { type: 'branch-diff' }> | null;
   commitFiles: ReadonlyArray<ChangedFile>;
   commitViewOpen: boolean;
@@ -77,6 +80,7 @@ export function Sidebar({
   pendingCommentCountBySource: ReadonlyMap<string, number>;
   pullRequestSource: PullRequestSource | null;
   reloadDeltaPaths: ReadonlySet<string>;
+  reviewDraftScopes: ReadonlyMap<string, { count: number; label: string }>;
   reviewDraftSourceByKey: ReadonlyMap<string, ReviewSource>;
   searchQuery: string;
   selectedPath: string | null;
@@ -134,6 +138,7 @@ export function Sidebar({
       </div>
       {mode === 'history' ? (
         <HistorySidebar
+          activeReviewScopeKey={activeReviewScopeKey}
           branchSource={branchSource}
           currentSource={currentSource}
           entries={historyEntries}
@@ -143,6 +148,7 @@ export function Sidebar({
           onSelectSource={onSelectSource}
           pendingCommentCountBySource={pendingCommentCountBySource}
           pullRequestSource={pullRequestSource}
+          reviewDraftScopes={reviewDraftScopes}
           reviewDraftSourceByKey={reviewDraftSourceByKey}
           searchQuery={searchQuery}
         />
@@ -240,6 +246,7 @@ const shortDate = (timestamp: number) => {
 };
 
 function HistorySidebar({
+  activeReviewScopeKey,
   branchSource,
   currentSource,
   entries,
@@ -249,9 +256,11 @@ function HistorySidebar({
   onSelectSource,
   pendingCommentCountBySource,
   pullRequestSource,
+  reviewDraftScopes,
   reviewDraftSourceByKey,
   searchQuery,
 }: {
+  activeReviewScopeKey: string;
   branchSource: Extract<ReviewSource, { type: 'branch-diff' }> | null;
   currentSource: ReviewSource;
   entries: ReadonlyArray<HistoryEntry>;
@@ -261,6 +270,7 @@ function HistorySidebar({
   onSelectSource: (source: ReviewSource) => void;
   pendingCommentCountBySource: ReadonlyMap<string, number>;
   pullRequestSource: PullRequestSource | null;
+  reviewDraftScopes: ReadonlyMap<string, { count: number; label: string }>;
   reviewDraftSourceByKey: ReadonlyMap<string, ReviewSource>;
   searchQuery: string;
 }) {
@@ -441,6 +451,9 @@ function HistorySidebar({
       onLoadMore();
     }
   }, [hasMore, loading, normalizedQuery, onLoadMore]);
+  const otherReviewScopes = [...reviewDraftScopes]
+    .filter(([scopeKey, scope]) => scopeKey !== activeReviewScopeKey && scope.count > 0)
+    .sort(([, left], [, right]) => left.label.localeCompare(right.label));
 
   return (
     <div className="history-list" onScroll={maybeLoadMore} ref={listRef}>
@@ -498,6 +511,26 @@ function HistorySidebar({
           </button>
         );
       })}
+      {otherReviewScopes.length > 0 ? (
+        <>
+          <div className="history-section">Other review scopes</div>
+          {otherReviewScopes.map(([scopeKey, scope]) => (
+            <div className="history-entry" key={scopeKey} title={scope.label}>
+              <span className="history-entry-ref">scope</span>
+              <span className="history-entry-subject">
+                <span>{scope.label}</span>
+                <span
+                  aria-label={`${scope.count} staged review ${scope.count === 1 ? 'comment' : 'comments'}`}
+                  className="history-entry-comment-count"
+                >
+                  <ChatCircleDots aria-hidden size={13} weight="fill" />
+                  <span>{scope.count}</span>
+                </span>
+              </span>
+            </div>
+          ))}
+        </>
+      ) : null}
       {loading ? (
         <div className="history-loading">
           <span>Loading history…</span>

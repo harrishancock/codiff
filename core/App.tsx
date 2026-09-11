@@ -208,6 +208,9 @@ export default function App() {
   const [reviewDraftSourceByKey, setReviewDraftSourceByKey] = useState<
     ReadonlyMap<string, ReviewSource>
   >(new Map());
+  const [reviewDraftScopes, setReviewDraftScopes] = useState<
+    ReadonlyMap<string, { count: number; label: string }>
+  >(new Map());
   const [pendingSource, setPendingSource] = useState<ReviewSource | null>(null);
   const [planDocument, setPlanDocument] = useState<CodiffMarkdownDocument | null>(null);
   const [planLoadError, setPlanLoadError] = useState<string | null>(null);
@@ -762,6 +765,15 @@ export default function App() {
       reviewDraftRevisionBySourceRef.current.clear();
       const restoredCommentCounts = new Map<string, number>();
       const restoredSources = new Map<string, ReviewSource>();
+      const restoredScopes = new Map<string, { count: number; label: string }>();
+      for (const persisted of persistedDrafts) {
+        const count = getPendingReviewCommentCount(persisted.comments);
+        const previous = restoredScopes.get(persisted.scopeKey);
+        restoredScopes.set(persisted.scopeKey, {
+          count: (previous?.count ?? 0) + count,
+          label: persisted.scope.label,
+        });
+      }
       for (const persisted of persistedDrafts.filter(
         (draft) => draft.scopeKey === activeReviewScope.key,
       )) {
@@ -784,6 +796,7 @@ export default function App() {
       }
       setPendingCommentCountBySource(restoredCommentCounts);
       setReviewDraftSourceByKey(restoredSources);
+      setReviewDraftScopes(restoredScopes);
       reviewDraftRepositoryRootRef.current = orderedState.root;
       const nextHistorySource: ReviewSource | null =
         getReloadHistorySource(reloadSelection, orderedState) ??
@@ -987,6 +1000,7 @@ export default function App() {
           reviewDraftRevisionBySourceRef.current.clear();
           setPendingCommentCountBySource(new Map());
           setReviewDraftSourceByKey(new Map());
+          setReviewDraftScopes(new Map());
           setReviewComments((current) => current.filter((comment) => comment.isReadOnly));
         })
         .catch((error: unknown) => {
@@ -2100,6 +2114,7 @@ export default function App() {
       <KeyboardShortcutsHelp keymap={codiffConfig.keymap} visible={shortcutsHelpVisible} />
       <aside className="squircle sidebar">
         <Sidebar
+          activeReviewScopeKey={getReviewScope(state).key}
           branchSource={
             historySource?.type === 'branch-diff'
               ? historySource
@@ -2136,6 +2151,7 @@ export default function App() {
           pendingCommentCountBySource={pendingCommentCountBySource}
           pullRequestSource={historySource?.type === 'pull-request' ? historySource : null}
           reloadDeltaPaths={reloadDeltaPaths}
+          reviewDraftScopes={reviewDraftScopes}
           reviewDraftSourceByKey={reviewDraftSourceByKey}
           searchQuery={sidebarMode === 'history' ? historySearchQuery : fileSearchQuery}
           selectedPath={visibleSelectedPath}
