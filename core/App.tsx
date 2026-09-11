@@ -14,6 +14,7 @@ import {
   DiffSearchPanel,
   FirstRunPanel,
   isPullRequestReviewActionDisabled,
+  MovedCodePaletteControl,
   PullRequestReviewButtons,
   RepositoryChangeBanner,
   RepositoryLoadErrorPanel,
@@ -70,6 +71,7 @@ import {
   shouldPreloadSectionContentsForSearch,
 } from './lib/diff.ts';
 import { sortFiles, splitRepositoryPath } from './lib/files.ts';
+import type { MovedCodePalette } from './lib/moved-code.ts';
 import {
   consumeReloadSelection,
   getChangedPaths,
@@ -341,6 +343,7 @@ export default function App() {
     direction: 1 | -1;
     request: number;
   } | null>(null);
+  const [movedCodePalette, setMovedCodePalette] = useState<MovedCodePalette>('slate');
   const showWhitespace = preferences.showWhitespace;
   const orderedFiles = useMemo(() => (state ? sortFiles(state.files) : []), [state]);
   const {
@@ -1749,6 +1752,7 @@ export default function App() {
     itemVersionByKey,
     keymap: codiffConfig.keymap,
     loadingSectionIds,
+    movedCodePalette,
     onAskCodex: askCodex,
     onCommentDraftChange: updateActiveReviewCommentDraft,
     onCreateComment: createComment,
@@ -1842,10 +1846,13 @@ export default function App() {
       <div aria-hidden className="window-drag-region" />
       <ReviewTopBar
         actions={
-          <CopyAllCommentsButton
-            commentCount={allReviewCommentCount}
-            getJSON={getAllReviewCommentsJSON}
-          />
+          <>
+            <MovedCodePaletteControl onChange={setMovedCodePalette} value={movedCodePalette} />
+            <CopyAllCommentsButton
+              commentCount={allReviewCommentCount}
+              getJSON={getAllReviewCommentsJSON}
+            />
+          </>
         }
         context={
           <>

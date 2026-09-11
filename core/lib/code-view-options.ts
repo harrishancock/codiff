@@ -71,6 +71,27 @@ export const codeViewUnsafeCSS = `
     --diffs-bg-selection-number-override: rgb(61 135 245 / 0.46);
   }
 
+  :host([data-codiff-moved-palette="slate"]) {
+    --codiff-moved-color: light-dark(#64748b, #94a3b8);
+  }
+
+  :host([data-codiff-moved-palette="blue"]) {
+    --codiff-moved-color: light-dark(#52718f, #89a8c4);
+  }
+
+  :host([data-codiff-moved-palette="violet"]) {
+    --codiff-moved-color: light-dark(#74658d, #aa9bc2);
+  }
+
+  :host(:not([data-codiff-moved-palette="off"])) [data-codiff-moved] {
+    --diffs-addition-base: var(--codiff-moved-color);
+    --diffs-deletion-base: var(--codiff-moved-color);
+    --diffs-bg-addition-emphasis: transparent;
+    --diffs-bg-deletion-emphasis: transparent;
+    --diffs-diff-line-mix-target: var(--codiff-moved-color);
+    --diffs-hover-mix-target: var(--codiff-moved-color);
+  }
+
   [data-diff-type="split"][data-overflow="scroll"] {
     grid-template-columns: minmax(0, 42fr) minmax(0, 58fr);
   }

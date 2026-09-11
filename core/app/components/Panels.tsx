@@ -22,6 +22,7 @@ import {
 import { matchesShortcut } from '../../config/keymap.ts';
 import type { CodiffKeymap } from '../../config/types.ts';
 import type { RepositoryLoadError } from '../../lib/app-types.ts';
+import type { MovedCodePalette } from '../../lib/moved-code.ts';
 import type {
   CodiffUpdateStatus,
   PullRequestMergeOptions,
@@ -412,6 +413,37 @@ export function CopyAllCommentsButton({
         <LucideCopy aria-hidden className="copy-comments-icon" size={14} strokeWidth={2.25} />
       )}
       <span className="copy-comments-count">All ({commentCount})</span>
+    </button>
+  );
+}
+
+const movedCodePalettes: ReadonlyArray<MovedCodePalette> = ['slate', 'blue', 'violet', 'off'];
+const movedCodePaletteLabels: Record<MovedCodePalette, string> = {
+  blue: 'Blue',
+  off: 'Off',
+  slate: 'Slate',
+  violet: 'Violet',
+};
+
+export function MovedCodePaletteControl({
+  onChange,
+  value,
+}: {
+  onChange: (value: MovedCodePalette) => void;
+  value: MovedCodePalette;
+}) {
+  const nextPalette =
+    movedCodePalettes[(movedCodePalettes.indexOf(value) + 1) % movedCodePalettes.length];
+
+  return (
+    <button
+      aria-label={`Moved code color: ${movedCodePaletteLabels[value]}. Change to ${movedCodePaletteLabels[nextPalette]}`}
+      className="moved-code-palette-control"
+      onClick={() => onChange(nextPalette)}
+      title="Cycle moved-code highlighting color"
+      type="button"
+    >
+      Moves: {movedCodePaletteLabels[value]}
     </button>
   );
 }

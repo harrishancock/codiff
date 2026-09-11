@@ -89,6 +89,11 @@ import {
 import { getItemVersion } from '../../lib/item-version.ts';
 import { isNativeInputTarget, isPrimaryModifier } from '../../lib/keyboard.ts';
 import { sanitizeMarkdownImages } from '../../lib/markdown.tsx';
+import {
+  applyMovedLineAttributes,
+  detectMovedLines,
+  type MovedCodePalette,
+} from '../../lib/moved-code.ts';
 import { isGeneratedWalkthroughFile } from '../../lib/narrative-walkthrough-diff.js';
 import {
   getCommentKey,
@@ -2517,6 +2522,7 @@ export function ReviewCodeView({
   itemVersionByKey,
   keymap,
   loadingSectionIds,
+  movedCodePalette = 'slate',
   onActiveBlockChange,
   onAskCodex,
   onCommentDraftChange,
@@ -2579,6 +2585,7 @@ export function ReviewCodeView({
   itemVersionByKey: Readonly<Record<string, number>>;
   keymap: CodiffKeymap;
   loadingSectionIds: ReadonlySet<string>;
+  movedCodePalette?: MovedCodePalette;
   onActiveBlockChange?: (blockId: string) => void;
   onAskCodex?: (commentId: string) => void;
   onCommentDraftChange?: (comment: Pick<ReviewComment, 'body' | 'id'> | null) => void;
@@ -2631,11 +2638,14 @@ export function ReviewCodeView({
   const highlightFrameRef = useRef<number | null>(null);
   const ignoreNextLineSelectionEndRef = useRef(false);
   const navigatedSelectionRef = useRef<CodeViewLineSelection | null>(null);
-  const initialMarkdownFiles =
-    files.length > 0
-      ? files
-      : (blocks?.map((block) => block.file).filter((file): file is ChangedFile => file != null) ??
-        []);
+  const initialMarkdownFiles = useMemo(
+    () =>
+      files.length > 0
+        ? files
+        : (blocks?.map((block) => block.file).filter((file): file is ChangedFile => file != null) ??
+          []),
+    [blocks, files],
+  );
   const initialEditableMarkdownSections = !isReadOnly
     ? initialMarkdownFiles.flatMap((file) => {
         const section = file.sections.at(-1);
@@ -2646,6 +2656,13 @@ export function ReviewCodeView({
           : [];
       })
     : [];
+  const movedLinesBySection = useMemo(() => {
+    const grouped = new Map<string, ReturnType<typeof detectMovedLines>>();
+    for (const line of detectMovedLines(initialMarkdownFiles)) {
+      grouped.set(line.sectionId, [...(grouped.get(line.sectionId) ?? []), line]);
+    }
+    return grouped;
+  }, [initialMarkdownFiles]);
   const [markdownPreviewSections, setMarkdownPreviewSections] = useState<ReadonlySet<string>>(
     () => new Set([...initialMarkdownPreviewSectionIds, ...initialEditableMarkdownSections]),
   );
@@ -3496,6 +3513,11 @@ export function ReviewCodeView({
         },
         onPostRender: (node, _instance, _phase, context) => {
           const metadata = itemMetadata.get(context.item.id);
+          node.dataset.codiffMovedPalette = movedCodePalette;
+          applyMovedLineAttributes(
+            node.shadowRoot ?? node,
+            metadata ? (movedLinesBySection.get(metadata.section.id) ?? []) : [],
+          );
           const isWalkthroughHeaderItem = context.item.id.endsWith(':walkthrough-header');
           node.classList.toggle('codiff-walkthrough-header-item', isWalkthroughHeaderItem);
           node.classList.toggle(
@@ -3546,6 +3568,8 @@ export function ReviewCodeView({
       itemMetadata,
       loadDiffFiles,
       loadingSectionIds,
+      movedCodePalette,
+      movedLinesBySection,
       onCreateComment,
       onFindDefinitions,
       onLoadSection,

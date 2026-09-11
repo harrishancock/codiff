@@ -3804,7 +3804,8 @@ diffs-container .review-comment-thread {
 
 /* Matches .review-top-bar-icon-button, the sidebar toggle two controls over,
    so the two read as siblings rather than as different kinds of control. */
-.copy-comments-button {
+.copy-comments-button,
+.moved-code-palette-control {
   -webkit-app-region: no-drag;
   align-items: center;
   background: transparent;
@@ -3974,12 +3975,14 @@ diffs-container .review-comment-thread {
   color: var(--text);
 }
 
-.copy-comments-button:hover:not(:disabled) {
+.copy-comments-button:hover:not(:disabled),
+.moved-code-palette-control:hover {
   background: rgb(127 127 127 / 0.14);
   color: var(--sidebar-text);
 }
 
-.copy-comments-button:active:not(:disabled) {
+.copy-comments-button:active:not(:disabled),
+.moved-code-palette-control:active {
   background: rgb(127 127 127 / 0.2);
   color: var(--sidebar-text);
 }
