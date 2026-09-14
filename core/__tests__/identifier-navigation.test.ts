@@ -2,7 +2,7 @@
  * @vitest-environment jsdom
  */
 
-import { expect, test } from 'vite-plus/test';
+import { expect, test, vi } from 'vite-plus/test';
 import {
   applyIdentifierNavigationState,
   getIdentifierAtOffset,
@@ -72,4 +72,26 @@ test('applies and clears the modifier affordance inside rendered diff shadow roo
   expect(line.textContent).toBe(
     '  return formatGreeting(name).value; // do not navigate these words',
   );
+});
+
+test('does not rewrite diff text while the user has selected it', () => {
+  const host = document.createElement('div');
+  document.body.append(host);
+  const root = host.attachShadow({ mode: 'open' });
+  const line = document.createElement('div');
+  line.dataset.line = '1';
+  line.textContent = 'copyThisValue';
+  root.append(line);
+  const getSelection = vi.spyOn(window, 'getSelection').mockReturnValue({
+    getRangeAt: () => ({ collapsed: false }),
+    isCollapsed: false,
+    rangeCount: 1,
+    toString: () => 'copyThisValue',
+  } as unknown as Selection);
+
+  applyIdentifierNavigationState([{ element: host }], true);
+
+  expect(root.querySelector('[data-codiff-identifier]')).toBeNull();
+  getSelection.mockRestore();
+  host.remove();
 });

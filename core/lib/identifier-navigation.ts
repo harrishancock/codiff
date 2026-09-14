@@ -1,5 +1,6 @@
 import dunkelTheme from '../themes/dunkel.json' with { type: 'json' };
 import lichtTheme from '../themes/licht.json' with { type: 'json' };
+import { hasActiveTextSelection } from './review-comments.ts';
 
 export type IdentifierAtOffset = {
   identifier: string;
@@ -172,6 +173,13 @@ export const applyIdentifierNavigationState = (
   renderedItems: ReadonlyArray<{ element: HTMLElement }>,
   active: boolean,
 ) => {
+  if (active && hasActiveTextSelection()) {
+    for (const { element } of renderedItems) {
+      element.toggleAttribute(definitionModifierAttribute, true);
+    }
+    return;
+  }
+
   for (const { element } of renderedItems) {
     element.toggleAttribute(definitionModifierAttribute, active);
     const root = element.shadowRoot;
