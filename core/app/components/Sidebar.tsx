@@ -436,9 +436,9 @@ function HistorySidebar({
     return otherDraftRows.length === 0
       ? rows
       : [
-          ...rows,
           { key: 'history-section:other-drafts', kind: 'section' as const, label: 'Other drafts' },
           ...otherDraftRows,
+          ...rows,
         ];
   }, [pendingCommentCountBySource, reviewDraftSourceByKey, rows]);
   const maybeLoadMore = useCallback(() => {
@@ -457,6 +457,26 @@ function HistorySidebar({
 
   return (
     <div className="history-list" onScroll={maybeLoadMore} ref={listRef}>
+      {otherReviewScopes.length > 0 ? (
+        <>
+          <div className="history-section">Other review scopes</div>
+          {otherReviewScopes.map(([scopeKey, scope]) => (
+            <div className="history-entry" key={scopeKey} title={scope.label}>
+              <span className="history-entry-ref">scope</span>
+              <span className="history-entry-subject">
+                <span>{scope.label}</span>
+                <span
+                  aria-label={`${scope.count} staged review ${scope.count === 1 ? 'comment' : 'comments'}`}
+                  className="history-entry-comment-count"
+                >
+                  <ChatCircleDots aria-hidden size={13} weight="fill" />
+                  <span>{scope.count}</span>
+                </span>
+              </span>
+            </div>
+          ))}
+        </>
+      ) : null}
       {visibleRows.map((row) => {
         if (row.kind === 'section') {
           return (
@@ -511,26 +531,6 @@ function HistorySidebar({
           </button>
         );
       })}
-      {otherReviewScopes.length > 0 ? (
-        <>
-          <div className="history-section">Other review scopes</div>
-          {otherReviewScopes.map(([scopeKey, scope]) => (
-            <div className="history-entry" key={scopeKey} title={scope.label}>
-              <span className="history-entry-ref">scope</span>
-              <span className="history-entry-subject">
-                <span>{scope.label}</span>
-                <span
-                  aria-label={`${scope.count} staged review ${scope.count === 1 ? 'comment' : 'comments'}`}
-                  className="history-entry-comment-count"
-                >
-                  <ChatCircleDots aria-hidden size={13} weight="fill" />
-                  <span>{scope.count}</span>
-                </span>
-              </span>
-            </div>
-          ))}
-        </>
-      ) : null}
       {loading ? (
         <div className="history-loading">
           <span>Loading history…</span>

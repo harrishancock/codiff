@@ -437,6 +437,12 @@ test('restores durable review drafts and writes later revisions', async () => {
   expect(view.container.textContent).not.toContain('fedcba9');
   expect(view.container.textContent).toContain('Other review scopes');
   expect(view.container.textContent).toContain('other');
+  expect(view.container.textContent?.indexOf('Other drafts')).toBeLessThan(
+    view.container.textContent?.indexOf('Commented commit') ?? -1,
+  );
+  expect(view.container.textContent?.indexOf('Other review scopes')).toBeLessThan(
+    view.container.textContent?.indexOf('Commented commit') ?? -1,
+  );
 });
 
 test('loads with an older preload bridge after a local renderer rebuild', async () => {
