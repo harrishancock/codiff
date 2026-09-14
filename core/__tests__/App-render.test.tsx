@@ -403,6 +403,28 @@ test('restores durable review drafts and writes later revisions', async () => {
       {
         comments: [
           {
+            body: 'Draft on an earlier range.',
+            filePath: 'src/range.ts',
+            id: 'draft-range',
+            lineNumber: 2,
+            sectionId: 'src/range.ts:old-range-head',
+            side: 'additions' as const,
+          },
+        ],
+        revision: 2,
+        scope: { key: 'branch:main', label: 'main', type: 'branch' as const },
+        scopeKey: 'branch:main',
+        source: {
+          base: 'origin/main',
+          head: 'HEAD',
+          symmetric: true,
+          type: 'range' as const,
+        },
+        sourceKey: 'range:origin/main...HEAD',
+      },
+      {
+        comments: [
+          {
             body: 'Draft on another branch.',
             filePath: 'src/branch.ts',
             id: 'draft-4',
@@ -430,10 +452,18 @@ test('restores durable review drafts and writes later revisions', async () => {
       sourceKey: 'working-tree',
     }),
   );
-  expect(view.container.querySelector('.copy-comments-button')?.textContent).toBe('All (3)');
+  expect(view.container.querySelector('.copy-comments-button')?.textContent).toBe('All (4)');
   expect(view.container.querySelector('.history-entry-comment-count')?.textContent).toBe('1');
   expect(view.container.textContent).toContain('Other drafts');
   expect(view.container.textContent).toContain('deadbee');
+  expect(view.container.textContent).toContain('origin/main...HEAD');
+  expect(view.container.textContent).toContain('Current review');
+  expect(view.container.textContent?.indexOf('Other drafts')).toBeLessThan(
+    view.container.textContent?.indexOf('Current review') ?? -1,
+  );
+  expect(view.container.textContent?.indexOf('Current review')).toBeLessThan(
+    view.container.textContent?.indexOf('Commented commit') ?? -1,
+  );
   expect(view.container.textContent).not.toContain('fedcba9');
   expect(view.container.textContent).toContain('Other review scopes');
   expect(view.container.textContent).toContain('other');

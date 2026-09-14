@@ -15,7 +15,7 @@ import {
   getTotalDiffLineCount,
 } from '../../lib/diff.ts';
 import { isNativeInputTarget } from '../../lib/keyboard.ts';
-import { getShortRef, getSourceKey } from '../../lib/source.ts';
+import { getShortRef, getSourceKey, getSourceLabel } from '../../lib/source.ts';
 import type { ChangedFile, HistoryEntry, NarrativeWalkthrough, ReviewSource } from '../../types.ts';
 import { Avatar } from './Avatar.tsx';
 import { Button } from './Button.tsx';
@@ -430,7 +430,7 @@ function HistorySidebar({
           kind: 'entry' as const,
           ref: source.type === 'commit' ? source.ref : sourceKey,
           source,
-          subject: 'Recovered review draft',
+          subject: source.type === 'commit' ? 'Recovered review draft' : getSourceLabel(source),
         };
       });
     return otherDraftRows.length === 0
@@ -438,6 +438,11 @@ function HistorySidebar({
       : [
           { key: 'history-section:other-drafts', kind: 'section' as const, label: 'Other drafts' },
           ...otherDraftRows,
+          {
+            key: 'history-section:current-review',
+            kind: 'section' as const,
+            label: 'Current review',
+          },
           ...rows,
         ];
   }, [pendingCommentCountBySource, reviewDraftSourceByKey, rows]);
@@ -504,7 +509,9 @@ function HistorySidebar({
                     row.source.type === 'branch-diff' ||
                     row.source.type === 'branch-working-tree'
                   ? row.ref
-                  : 'local'}
+                  : row.source.type === 'range'
+                    ? 'range'
+                    : 'local'}
             </span>
             <span className="history-entry-subject">
               <span>{row.subject}</span>
