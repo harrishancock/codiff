@@ -24,6 +24,7 @@ import {
 } from './app/components/Panels.tsx';
 import { PlanEditorView } from './app/components/PlanEditorView.tsx';
 import { ReviewCodeView, type ReviewDiffBlock } from './app/components/ReviewCodeView.tsx';
+import { ReviewDraftRecoveryView } from './app/components/ReviewDraftRecoveryView.tsx';
 import type { ReviewModeItem } from './app/components/ReviewModeControl.tsx';
 import { ReviewTopBar } from './app/components/ReviewTopBar.tsx';
 import { Sidebar } from './app/components/Sidebar.tsx';
@@ -222,6 +223,7 @@ export default function App() {
   const [reviewDraftModel, setReviewDraftModel] = useState<ReadonlyArray<ClassifiedReviewDraft>>(
     [],
   );
+  const [recoveryScopeKey, setRecoveryScopeKey] = useState<string | null>(null);
   const [pendingSource, setPendingSource] = useState<ReviewSource | null>(null);
   const [planDocument, setPlanDocument] = useState<CodiffMarkdownDocument | null>(null);
   const [planLoadError, setPlanLoadError] = useState<string | null>(null);
@@ -2234,7 +2236,11 @@ export default function App() {
           onSearchQueryChange={
             sidebarMode === 'history' ? setHistorySearchQuery : setFileSearchQuery
           }
-          onSelectSource={selectSource}
+          onSelectReviewScope={setRecoveryScopeKey}
+          onSelectSource={(source) => {
+            setRecoveryScopeKey(null);
+            void selectSource(source);
+          }}
           onShareWalkthrough={enabledShareWalkthrough}
           onToggleCommitView={showPlainCommitView ? closeCommitView : openCommitView}
           pendingCommentCountBySource={pendingCommentCountBySource}
@@ -2265,7 +2271,12 @@ export default function App() {
       </aside>
       <div aria-hidden className="sidebar-resizer" onPointerDown={resizeSidebar} />
       <main className="review">
-        {isSwitchingSource ? (
+        {recoveryScopeKey ? (
+          <ReviewDraftRecoveryView
+            drafts={reviewDraftModel.filter(({ scopeKey }) => scopeKey === recoveryScopeKey)}
+            scopeLabel={reviewDraftScopes.get(recoveryScopeKey)?.label ?? 'Recovered drafts'}
+          />
+        ) : isSwitchingSource ? (
           <ReviewSourceLoading />
         ) : showPlainCommitView ? (
           <CommitView

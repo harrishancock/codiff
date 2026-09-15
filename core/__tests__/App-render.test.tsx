@@ -481,6 +481,14 @@ test('restores durable review drafts and writes later revisions', async () => {
   expect(view.container.textContent?.indexOf('Other review scopes')).toBeLessThan(
     view.container.textContent?.indexOf('Commented commit') ?? -1,
   );
+
+  const otherScope = view.container.querySelector<HTMLButtonElement>(
+    'button[title="View preserved comments in other"]',
+  );
+  await act(() => otherScope?.click());
+  expect(view.container.querySelector('.review-draft-recovery-view')?.textContent).toContain(
+    'Draft on another branch.',
+  );
 });
 
 test('loads with an older preload bridge after a local renderer rebuild', async () => {

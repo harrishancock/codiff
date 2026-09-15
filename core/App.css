@@ -1678,6 +1678,127 @@ html[data-codiff-platform='darwin'] .sidebar {
   position: relative;
 }
 
+.review-draft-recovery-view {
+  color: var(--text);
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  overflow: auto;
+  padding: 28px;
+}
+
+.review-draft-recovery-header {
+  align-items: center;
+  border-bottom: 1px solid var(--file-border);
+  display: flex;
+  justify-content: space-between;
+  padding-bottom: 18px;
+}
+
+.review-draft-recovery-header > div {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.review-draft-recovery-header strong {
+  font-size: 18px;
+}
+
+.review-draft-recovery-header span,
+.review-draft-recovery-reason {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.review-draft-recovery-header button,
+.review-draft-recovery-card button {
+  align-items: center;
+  background: transparent;
+  border: 1px solid var(--file-border);
+  border-radius: 8px;
+  color: var(--sidebar-text);
+  cursor: pointer;
+  display: inline-flex;
+  font: 600 12px/1 var(--font-sans);
+  gap: 6px;
+  padding: 8px 10px;
+}
+
+.review-draft-recovery-header button:hover:not(:disabled),
+.review-draft-recovery-card button:hover {
+  background: rgb(127 127 127 / 0.14);
+}
+
+.review-draft-recovery-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding-top: 18px;
+}
+
+.review-draft-recovery-card {
+  background: var(--code-bg);
+  border: 1px solid var(--file-border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.review-draft-recovery-card > header {
+  align-items: flex-start;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  padding: 14px 16px 10px;
+}
+
+.review-draft-recovery-identity {
+  align-items: baseline;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+}
+
+.review-draft-recovery-identity code {
+  color: var(--sidebar-ref);
+}
+
+.review-draft-recovery-identity span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.review-draft-recovery-identity .review-draft-recovery-disposition {
+  background: rgb(127 127 127 / 0.14);
+  border-radius: 10px;
+  color: var(--sidebar-text);
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 6px;
+  text-transform: uppercase;
+}
+
+.review-draft-recovery-actions {
+  display: flex;
+  flex: none;
+  gap: 6px;
+}
+
+.review-draft-recovery-reason {
+  margin: 0;
+  padding: 0 16px 12px;
+}
+
+.review-draft-recovery-body {
+  border-top: 1px solid var(--file-border);
+  font-size: 13px;
+  line-height: 1.5;
+  padding: 14px 16px;
+  white-space: pre-wrap;
+}
+
 .codiff-web-review {
   flex-direction: column;
 }

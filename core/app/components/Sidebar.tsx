@@ -41,6 +41,7 @@ export function Sidebar({
   onActivatePath,
   onLoadMoreHistory,
   onSearchQueryChange,
+  onSelectReviewScope,
   onSelectSource,
   onShareWalkthrough,
   onToggleCommitView,
@@ -74,6 +75,7 @@ export function Sidebar({
   onActivatePath: (path: string) => void;
   onLoadMoreHistory: () => void;
   onSearchQueryChange: (query: string) => void;
+  onSelectReviewScope: (scopeKey: string) => void;
   onSelectSource: (source: ReviewSource) => void;
   onShareWalkthrough?: () => void;
   onToggleCommitView: () => void;
@@ -145,6 +147,7 @@ export function Sidebar({
           hasMore={historyHasMore}
           loading={historyLoading}
           onLoadMore={onLoadMoreHistory}
+          onSelectReviewScope={onSelectReviewScope}
           onSelectSource={onSelectSource}
           pendingCommentCountBySource={pendingCommentCountBySource}
           pullRequestSource={pullRequestSource}
@@ -253,6 +256,7 @@ function HistorySidebar({
   hasMore,
   loading,
   onLoadMore,
+  onSelectReviewScope,
   onSelectSource,
   pendingCommentCountBySource,
   pullRequestSource,
@@ -267,6 +271,7 @@ function HistorySidebar({
   hasMore: boolean;
   loading: boolean;
   onLoadMore: () => void;
+  onSelectReviewScope: (scopeKey: string) => void;
   onSelectSource: (source: ReviewSource) => void;
   pendingCommentCountBySource: ReadonlyMap<string, number>;
   pullRequestSource: PullRequestSource | null;
@@ -466,7 +471,13 @@ function HistorySidebar({
         <>
           <div className="history-section">Other review scopes</div>
           {otherReviewScopes.map(([scopeKey, scope]) => (
-            <div className="history-entry" key={scopeKey} title={scope.label}>
+            <button
+              className="history-entry"
+              key={scopeKey}
+              onClick={() => onSelectReviewScope(scopeKey)}
+              title={`View preserved comments in ${scope.label}`}
+              type="button"
+            >
               <span className="history-entry-ref">scope</span>
               <span className="history-entry-subject">
                 <span>{scope.label}</span>
@@ -478,7 +489,7 @@ function HistorySidebar({
                   <span>{scope.count}</span>
                 </span>
               </span>
-            </div>
+            </button>
           ))}
         </>
       ) : null}
