@@ -20,6 +20,7 @@ import type {
   OpenReviewSourceKind,
   PlanHandoffStatus,
   PlanReview,
+  PersistedReviewDraftSource,
   RepositoryHistory,
   RepositoryState,
   ReviewDraftClassification,
@@ -83,17 +84,7 @@ declare global {
       getPreferences: () => Promise<CodiffPreferences>;
       getRepositoryHistory: (limit?: number, source?: ReviewSource) => Promise<RepositoryHistory>;
       getRepositoryState: (source?: ReviewSource) => Promise<RepositoryState>;
-      getReviewDrafts?: () => Promise<
-        ReadonlyArray<{
-          comments: ReadonlyArray<ReviewComment>;
-          revision: number;
-          scope: ReviewScope;
-          scopeKey: string;
-          source: ReviewSource;
-          sourceKey: string;
-          sourceSnapshot?: ReviewSourceSnapshot | null;
-        }>
-      >;
+      getReviewDrafts?: () => Promise<ReadonlyArray<PersistedReviewDraftSource>>;
       getTerminalHelperStatus: () => Promise<TerminalHelperStatus>;
       getUpdateStatus: () => Promise<CodiffUpdateStatus>;
       increaseCodeFontSize: () => Promise<void>;

@@ -85,12 +85,18 @@ import {
 } from './lib/reload-selection.ts';
 import { resolveReviewCommandTarget } from './lib/review-command-target.ts';
 import {
-  buildAllReviewCommentsJSON,
   getPendingReviewCommentCount,
   getReviewCommentsFromState,
   getVisibleReviewComments,
   mergeReviewComments,
 } from './lib/review-comments.ts';
+import {
+  buildClassifiedReviewDraftModel,
+  buildReviewDraftsJSON,
+  getReviewDraftClassificationId,
+  getReviewDraftCounts,
+  type ClassifiedReviewDraft,
+} from './lib/review-drafts.ts';
 import { getSelectedPathFromScroll } from './lib/review-scroll.ts';
 import {
   SIDEBAR_COLLAPSE_THRESHOLD,
@@ -123,7 +129,9 @@ import type {
   GitIdentity,
   HistoryEntry,
   OpenReviewSourceKind,
+  PersistedReviewDraftSource,
   RepositoryState,
+  ReviewDraftClassification,
   ReviewSource,
   TerminalHelperStatus,
   DiffSection,
@@ -211,6 +219,9 @@ export default function App() {
   const [reviewDraftScopes, setReviewDraftScopes] = useState<
     ReadonlyMap<string, { count: number; label: string }>
   >(new Map());
+  const [reviewDraftModel, setReviewDraftModel] = useState<ReadonlyArray<ClassifiedReviewDraft>>(
+    [],
+  );
   const [pendingSource, setPendingSource] = useState<ReviewSource | null>(null);
   const [planDocument, setPlanDocument] = useState<CodiffMarkdownDocument | null>(null);
   const [planLoadError, setPlanLoadError] = useState<string | null>(null);
@@ -234,6 +245,8 @@ export default function App() {
   const reviewDraftRevisionBySourceRef = useRef<Map<string, number>>(new Map());
   const reviewDraftRepositoryRootRef = useRef<string | null>(null);
   const reviewDraftSaveErrorRef = useRef<string | null>(null);
+  const persistedReviewDraftSourcesRef = useRef<ReadonlyArray<PersistedReviewDraftSource>>([]);
+  const reviewDraftClassificationsRef = useRef<ReadonlyArray<ReviewDraftClassification>>([]);
   const stateRef = useRef<RepositoryState | null>(null);
   const collapsedRef = useRef<Set<string>>(new Set());
   const expandedReviewKeysRef = useRef<Set<string>>(new Set());
@@ -641,19 +654,12 @@ export default function App() {
 
   const getAllReviewCommentsJSON = useCallback(() => {
     const currentState = stateRef.current;
-    const sessions = new Map<string, Pick<SourceSession, 'reviewComments'>>(
-      [...sourceSessionsRef.current].map(([source, session]) => [
-        source,
-        { reviewComments: session.reviewComments },
-      ]),
-    );
-    if (currentState) {
-      sessions.set(getSourceKey(currentState.source), {
-        reviewComments: reviewCommentsRef.current,
-      });
+    if (!currentState) {
+      return '[]';
     }
-    return buildAllReviewCommentsJSON(sessions);
-  }, [reviewCommentsRef]);
+    const activeScopeKey = getReviewScope(currentState).key;
+    return buildReviewDraftsJSON(reviewDraftModel, ({ scopeKey }) => scopeKey === activeScopeKey);
+  }, [reviewDraftModel]);
 
   useEffect(() => {
     const currentState = stateRef.current;
@@ -669,6 +675,39 @@ export default function App() {
     }
     const sourceKey = getSourceKey(currentState.source);
     const scope = getReviewScope(currentState);
+    const currentSource: PersistedReviewDraftSource = {
+      comments: reviewComments,
+      revision: reviewDraftRevisionBySourceRef.current.get(sourceKey) ?? 0,
+      scope,
+      scopeKey: scope.key,
+      source: currentState.source,
+      sourceKey,
+      sourceSnapshot: currentState.sourceSnapshot,
+    };
+    persistedReviewDraftSourcesRef.current = [
+      ...persistedReviewDraftSourcesRef.current.filter(
+        (source) => source.scopeKey !== scope.key || source.sourceKey !== sourceKey,
+      ),
+      currentSource,
+    ];
+    const sourceClassification = reviewDraftClassificationsRef.current.find((classification) =>
+      classification.id.startsWith(`${scope.key}\0${sourceKey}\0`),
+    );
+    const classifications = [...reviewDraftClassificationsRef.current];
+    for (const comment of reviewComments) {
+      const id = getReviewDraftClassificationId(scope.key, sourceKey, comment.id);
+      if (!classifications.some((classification) => classification.id === id)) {
+        classifications.push({
+          disposition: sourceClassification?.disposition ?? 'current',
+          id,
+          reason: sourceClassification?.reason ?? 'Draft belongs to the displayed source.',
+        });
+      }
+    }
+    reviewDraftClassificationsRef.current = classifications;
+    setReviewDraftModel(
+      buildClassifiedReviewDraftModel(persistedReviewDraftSourcesRef.current, classifications),
+    );
     setReviewDraftSourceByKey((current) => {
       if (current.get(sourceKey) === currentState.source) {
         return current;
@@ -765,6 +804,36 @@ export default function App() {
       if (canceled) {
         return;
       }
+      const classificationRequests = persistedDrafts.flatMap((persisted) =>
+        persisted.comments
+          .filter((comment) => !comment.isReadOnly && comment.body.trim())
+          .map((comment) => ({
+            ...(persisted.scopeKey === activeReviewScope.key &&
+            persisted.sourceKey === getSourceKey(orderedState.source) &&
+            orderedState.sourceSnapshot
+              ? { currentSourceSnapshot: orderedState.sourceSnapshot }
+              : {}),
+            id: getReviewDraftClassificationId(persisted.scopeKey, persisted.sourceKey, comment.id),
+            scope: persisted.scope,
+            sourceSnapshot: persisted.sourceSnapshot ?? null,
+          })),
+      );
+      const classifications = window.codiff.classifyReviewDrafts
+        ? await window.codiff
+            .classifyReviewDrafts(classificationRequests)
+            .catch((error: unknown) => {
+              window.alert(
+                `Codiff could not classify review comments: ${error instanceof Error ? error.message : String(error)}`,
+              );
+              return [];
+            })
+        : [];
+      if (canceled) {
+        return;
+      }
+      persistedReviewDraftSourcesRef.current = persistedDrafts;
+      reviewDraftClassificationsRef.current = classifications;
+      setReviewDraftModel(buildClassifiedReviewDraftModel(persistedDrafts, classifications));
       sourceSessionsRef.current.clear();
       reviewDraftRevisionBySourceRef.current.clear();
       const restoredCommentCounts = new Map<string, number>();
@@ -1005,6 +1074,9 @@ export default function App() {
           setPendingCommentCountBySource(new Map());
           setReviewDraftSourceByKey(new Map());
           setReviewDraftScopes(new Map());
+          persistedReviewDraftSourcesRef.current = [];
+          reviewDraftClassificationsRef.current = [];
+          setReviewDraftModel([]);
           setReviewComments((current) => current.filter((comment) => comment.isReadOnly));
         })
         .catch((error: unknown) => {
@@ -1858,13 +1930,10 @@ export default function App() {
     );
   }
 
-  const currentSourceKey = getSourceKey(state.source);
-  const allReviewCommentCount =
-    getPendingReviewCommentCount(reviewComments) +
-    [...pendingCommentCountBySource].reduce(
-      (count, [source, sourceCount]) => (source === currentSourceKey ? count : count + sourceCount),
-      0,
-    );
+  const allReviewCommentCount = getReviewDraftCounts(
+    reviewDraftModel,
+    getReviewScope(state).key,
+  ).allInReview;
   const selectedOrSearchPath = activeDiffSearchMatch?.filePath ?? selectedPath;
   const visibleSelectedPath =
     selectedOrSearchPath && visibleFiles.some((file) => file.path === selectedOrSearchPath)

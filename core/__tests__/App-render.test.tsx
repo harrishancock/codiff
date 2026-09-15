@@ -63,6 +63,7 @@ const repositoryState = {
   launchPath: '/repo',
   root: '/repo',
   source: { type: 'working-tree' },
+  sourceSnapshot: { filesFingerprint: 'empty', head: 'abc123', type: 'working-tree' },
 } satisfies RepositoryState;
 
 const createCommitMetadataFixture = (body: string): CommitMetadata => ({
@@ -335,7 +336,12 @@ const dispatchModifiedKey = (key: string, shiftKey = false) => {
 
 test('restores durable review drafts and writes later revisions', async () => {
   const saveReviewDrafts = vi.fn(async () => true);
+  const classifyReviewDrafts = vi.fn<NonNullable<Window['codiff']['classifyReviewDrafts']>>(
+    async (requests) =>
+      requests.map(({ id }) => ({ disposition: 'current', id, reason: 'Reachable.' })),
+  );
   window.codiff = createCodiffMock({
+    classifyReviewDrafts,
     getRepositoryHistory: vi.fn(async () => ({
       entries: [
         {
@@ -444,6 +450,8 @@ test('restores durable review drafts and writes later revisions', async () => {
   });
 
   await using view = await renderReact(<App />);
+  await waitFor(() => expect(classifyReviewDrafts).toHaveBeenCalled());
+  expect(classifyReviewDrafts.mock.calls[0]?.[0]).toHaveLength(5);
   await waitFor(() => expect(saveReviewDrafts).toHaveBeenCalled());
   expect(saveReviewDrafts).toHaveBeenLastCalledWith(
     expect.objectContaining({

@@ -309,6 +309,16 @@ export type ReviewDraftClassificationRequest = {
   sourceSnapshot: ReviewSourceSnapshot | null;
 };
 
+export type PersistedReviewDraftSource = {
+  comments: ReadonlyArray<import('./lib/app-types.ts').ReviewComment>;
+  revision: number;
+  scope: ReviewScope;
+  scopeKey: string;
+  source: ReviewSource;
+  sourceKey: string;
+  sourceSnapshot?: ReviewSourceSnapshot | null;
+};
+
 export type CodiffFeatureFlags = {
   planSharing: boolean;
   walkthroughSharing: boolean;
