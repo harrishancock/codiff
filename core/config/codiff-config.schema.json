@@ -43,9 +43,10 @@
           "description": "Font size in pixels used for diff and code rendering."
         },
         "copyCommentsOnClose": {
-          "type": "boolean",
-          "default": false,
-          "description": "Copy pending review comments to clipboard when closing a window."
+          "type": "string",
+          "enum": ["off", "current", "all-in-review"],
+          "default": "off",
+          "description": "Choose which pending review comments to copy when closing a window."
         },
         "diffStyle": {
           "type": "string",

@@ -180,7 +180,7 @@ const createCodiffMock = (overrides: Partial<Window['codiff']> = {}): Window['co
     claudeModel: defaultSettings.claudeModel,
     codeFontFamily: defaultSettings.codeFontFamily,
     codeFontSize: defaultSettings.codeFontSize,
-    copyCommentsOnClose: true,
+    copyCommentsOnClose: 'all-in-review' as const,
     diffStyle: 'split' as const,
     editorCommand: '',
     lastRepositoryPath: '/repo',

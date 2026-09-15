@@ -286,9 +286,12 @@ const mergeConfig = (raw) => {
       codeFontFamily: normalizeCodeFontFamily(rawSettings.codeFontFamily),
       codeFontSize: normalizeCodeFontSize(rawSettings.codeFontSize),
       copyCommentsOnClose:
-        typeof rawSettings.copyCommentsOnClose === 'boolean'
+        rawSettings.copyCommentsOnClose === 'current' ||
+        rawSettings.copyCommentsOnClose === 'all-in-review'
           ? rawSettings.copyCommentsOnClose
-          : defaults.settings.copyCommentsOnClose,
+          : rawSettings.copyCommentsOnClose === true
+            ? 'all-in-review'
+            : 'off',
       diffStyle: normalizeDiffStyle(rawSettings.diffStyle),
       editorCommand:
         typeof rawSettings.editorCommand === 'string'

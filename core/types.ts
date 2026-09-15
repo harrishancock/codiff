@@ -848,7 +848,7 @@ export type CodiffPreferences = {
   claudeModel: string;
   codeFontFamily: string;
   codeFontSize: number;
-  copyCommentsOnClose: boolean;
+  copyCommentsOnClose: 'all-in-review' | 'current' | 'off';
   diffStyle: CodiffDiffStyle;
   editorCommand: string;
   lastRepositoryPath: string;

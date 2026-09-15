@@ -59,9 +59,9 @@ const codiff = {
     return () => ipcRenderer.removeListener('codiff:clearReviewDraftsRequest', callback);
   },
   onCopyPendingCommentsRequest: (callback) => {
-    /** @param {Electron.IpcRendererEvent} _event @param {number} requestId */
-    const listener = (_event, requestId) => {
-      Promise.resolve(callback()).then(
+    /** @param {Electron.IpcRendererEvent} _event @param {number} requestId @param {'all-in-review' | 'current'} mode */
+    const listener = (_event, requestId, mode) => {
+      Promise.resolve(callback(mode)).then(
         (markdown) => {
           ipcRenderer.send(
             'codiff:copyPendingCommentsResult',

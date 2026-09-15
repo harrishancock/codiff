@@ -88,6 +88,24 @@ test('electron config normalizes sidebar position', () => {
   ).toBe('left');
 });
 
+test('electron config migrates copy-comments-on-close booleans', () => {
+  expect(readElectronConfig({}).settings.copyCommentsOnClose).toBe('off');
+  expect(
+    readElectronConfig({ settings: { copyCommentsOnClose: 'current' } }).settings
+      .copyCommentsOnClose,
+  ).toBe('current');
+  expect(
+    readElectronConfig({ settings: { copyCommentsOnClose: 'all-in-review' } }).settings
+      .copyCommentsOnClose,
+  ).toBe('all-in-review');
+  expect(
+    readElectronConfig({ settings: { copyCommentsOnClose: true } }).settings.copyCommentsOnClose,
+  ).toBe('all-in-review');
+  expect(
+    readElectronConfig({ settings: { copyCommentsOnClose: false } }).settings.copyCommentsOnClose,
+  ).toBe('off');
+});
+
 test('electron config keeps custom walkthrough prompt text only when it is a string', () => {
   expect(
     readElectronConfig({

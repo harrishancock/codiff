@@ -6,12 +6,13 @@ type FakeBrowserWindow = {
   webContents: {
     id: number;
     isDestroyed: () => boolean;
-    send: (channel: string, requestId: number) => void;
+    send: (channel: string, requestId: number, mode: string) => void;
   };
 };
 
 type SentMessage = {
   channel: string;
+  mode: string;
   requestId: number;
 };
 
@@ -25,13 +26,17 @@ const { createPendingCommentsClipboardController } = require('../pending-comment
   }) => {
     copyPendingCommentsToClipboard: (
       browserWindows: ReadonlyArray<FakeBrowserWindow>,
+      mode: 'all-in-review' | 'current',
     ) => Promise<void>;
     handleCopyPendingCommentsResult: (
       event: { sender: { id: number } },
       requestId: number,
       markdown: unknown,
     ) => void;
-    requestPendingCommentsMarkdown: (browserWindow: FakeBrowserWindow) => Promise<string>;
+    requestPendingCommentsMarkdown: (
+      browserWindow: FakeBrowserWindow,
+      mode: 'all-in-review' | 'current',
+    ) => Promise<string>;
   };
 };
 
@@ -42,8 +47,8 @@ const createFakeWindow = (id: number) => {
     webContents: {
       id,
       isDestroyed: () => false,
-      send: (channel, requestId) => {
-        sentMessages.push({ channel, requestId });
+      send: (channel, requestId, mode) => {
+        sentMessages.push({ channel, mode, requestId });
       },
     },
   };
@@ -60,11 +65,12 @@ test('copies one window of pending comments before close', async () => {
   });
   const window = createFakeWindow(1);
 
-  const copyPromise = controller.copyPendingCommentsToClipboard([window.browserWindow]);
+  const copyPromise = controller.copyPendingCommentsToClipboard([window.browserWindow], 'current');
 
   expect(window.sentMessages).toEqual([
     {
       channel: 'codiff:copyPendingCommentsRequest',
+      mode: 'current',
       requestId: 1,
     },
   ]);
@@ -89,20 +95,22 @@ test('copies all windows together before app quit instead of overwriting clipboa
   const firstWindow = createFakeWindow(1);
   const secondWindow = createFakeWindow(2);
 
-  const copyPromise = controller.copyPendingCommentsToClipboard([
-    firstWindow.browserWindow,
-    secondWindow.browserWindow,
-  ]);
+  const copyPromise = controller.copyPendingCommentsToClipboard(
+    [firstWindow.browserWindow, secondWindow.browserWindow],
+    'all-in-review',
+  );
 
   expect(firstWindow.sentMessages).toEqual([
     {
       channel: 'codiff:copyPendingCommentsRequest',
+      mode: 'all-in-review',
       requestId: 1,
     },
   ]);
   expect(secondWindow.sentMessages).toEqual([
     {
       channel: 'codiff:copyPendingCommentsRequest',
+      mode: 'all-in-review',
       requestId: 2,
     },
   ]);
@@ -122,7 +130,10 @@ test('ignores pending comment responses from the wrong window', async () => {
   });
   const window = createFakeWindow(1);
 
-  const markdownPromise = controller.requestPendingCommentsMarkdown(window.browserWindow);
+  const markdownPromise = controller.requestPendingCommentsMarkdown(
+    window.browserWindow,
+    'all-in-review',
+  );
 
   controller.handleCopyPendingCommentsResult({ sender: { id: 2 } }, 1, 'Wrong window.');
   controller.handleCopyPendingCommentsResult({ sender: { id: 1 } }, 1, 'Right window.');

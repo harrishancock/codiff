@@ -141,7 +141,7 @@ counts; when it is `false`, Codiff hides those changes from the working-tree rev
     "claudeModel": "claude-sonnet-4-6",
     "codeFontFamily": "",
     "codeFontSize": 13,
-    "copyCommentsOnClose": false,
+    "copyCommentsOnClose": "off",
     "diffStyle": "split",
     "editorCommand": "",
     "lastRepositoryPath": "",

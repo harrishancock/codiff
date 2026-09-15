@@ -799,14 +799,42 @@ const buildApplicationMenu = () =>
                 type: 'checkbox',
               },
               {
-                checked: config.settings.copyCommentsOnClose,
-                click: (menuItem) => {
-                  updateConfig({
-                    settings: { ...config.settings, copyCommentsOnClose: menuItem.checked },
-                  });
-                },
-                label: 'Copy All Comments on Close',
-                type: 'checkbox',
+                label: 'Copy Comments on Close',
+                submenu: [
+                  {
+                    checked: config.settings.copyCommentsOnClose === 'off',
+                    click: () => {
+                      updateConfig({
+                        settings: { ...config.settings, copyCommentsOnClose: 'off' },
+                      });
+                    },
+                    label: 'Off',
+                    type: 'radio',
+                  },
+                  {
+                    checked: config.settings.copyCommentsOnClose === 'current',
+                    click: () => {
+                      updateConfig({
+                        settings: { ...config.settings, copyCommentsOnClose: 'current' },
+                      });
+                    },
+                    label: 'Current Versions',
+                    type: 'radio',
+                  },
+                  {
+                    checked: config.settings.copyCommentsOnClose === 'all-in-review',
+                    click: () => {
+                      updateConfig({
+                        settings: {
+                          ...config.settings,
+                          copyCommentsOnClose: 'all-in-review',
+                        },
+                      });
+                    },
+                    label: 'All in Review',
+                    type: 'radio',
+                  },
+                ],
               },
               {
                 click: (_menuItem, browserWindow) => {
@@ -1014,7 +1042,7 @@ const createWindow = (
       return;
     }
 
-    if (allowClose || quitting || !config.settings.copyCommentsOnClose) {
+    if (allowClose || quitting || config.settings.copyCommentsOnClose === 'off') {
       return;
     }
 
@@ -1024,12 +1052,14 @@ const createWindow = (
     }
 
     copyingPendingCommentsBeforeClose = true;
-    pendingCommentsClipboardController.copyPendingCommentsToClipboard([window]).finally(() => {
-      allowClose = true;
-      if (!window.isDestroyed()) {
-        window.close();
-      }
-    });
+    pendingCommentsClipboardController
+      .copyPendingCommentsToClipboard([window], config.settings.copyCommentsOnClose)
+      .finally(() => {
+        allowClose = true;
+        if (!window.isDestroyed()) {
+          window.close();
+        }
+      });
   });
   window.on('closed', () => {
     openWindows.delete(window);
@@ -1407,7 +1437,11 @@ if (squirrelStartup || !lock) {
       (window) => !window.isDestroyed() && !window.webContents.isDestroyed(),
     );
 
-    if (config.settings.copyCommentsOnClose && !quitAfterCopyingPendingComments && windows.length) {
+    if (
+      config.settings.copyCommentsOnClose !== 'off' &&
+      !quitAfterCopyingPendingComments &&
+      windows.length
+    ) {
       event.preventDefault();
       if (copyingPendingCommentsBeforeQuit) {
         return;
@@ -1415,7 +1449,7 @@ if (squirrelStartup || !lock) {
 
       copyingPendingCommentsBeforeQuit = true;
       void pendingCommentsClipboardController
-        .copyPendingCommentsToClipboard(windows)
+        .copyPendingCommentsToClipboard(windows, config.settings.copyCommentsOnClose)
         .finally(() => {
           quitAfterCopyingPendingComments = true;
           quitting = true;

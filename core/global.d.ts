@@ -94,7 +94,9 @@ declare global {
       markPlanReady: () => Promise<void>;
       onClearReviewDraftsRequest?: (callback: () => void) => () => void;
       onConfigChanged: (callback: (config: CodiffConfig) => void) => () => void;
-      onCopyPendingCommentsRequest: (callback: () => string | Promise<string>) => () => void;
+      onCopyPendingCommentsRequest: (
+        callback: (mode: 'all-in-review' | 'current') => string | Promise<string>,
+      ) => () => void;
       onFindInDiffs: (callback: () => void) => () => void;
       onKeyboardLayoutChanged: (callback: (layout: NativeKeyboardLayout) => void) => () => void;
       onMarkdownDocumentChanged: (

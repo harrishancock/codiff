@@ -1429,12 +1429,12 @@ export default function App() {
   }, [preferences]);
 
   useEffect(() => {
-    const removeListener = window.codiff.onCopyPendingCommentsRequest(() => {
-      const json = getAllReviewCommentsJSON();
+    const removeListener = window.codiff.onCopyPendingCommentsRequest((mode) => {
+      const json = mode === 'current' ? getCurrentReviewCommentsJSON() : getAllReviewCommentsJSON();
       return json === '[]' ? '' : json;
     });
     return removeListener;
-  }, [getAllReviewCommentsJSON]);
+  }, [getAllReviewCommentsJSON, getCurrentReviewCommentsJSON]);
 
   useEffect(() => {
     void window.codiff.isWindowFullScreen().then(setIsWindowFullScreen, () => {});

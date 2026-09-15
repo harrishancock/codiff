@@ -1,6 +1,7 @@
 export type CodiffDiffStyle = 'split' | 'unified';
 export type CodiffTheme = 'system' | 'light' | 'dark';
 export type CodiffAgentBackend = 'codex' | 'claude' | 'opencode' | 'pi';
+export type CopyCommentsOnClose = 'all-in-review' | 'current' | 'off';
 
 export type CodiffSettings = {
   agentBackend: CodiffAgentBackend;
@@ -8,7 +9,7 @@ export type CodiffSettings = {
   claudeModel: string;
   codeFontFamily: string;
   codeFontSize: number;
-  copyCommentsOnClose: boolean;
+  copyCommentsOnClose: CopyCommentsOnClose;
   diffStyle: CodiffDiffStyle;
   editorCommand: string;
   lastRepositoryPath: string;

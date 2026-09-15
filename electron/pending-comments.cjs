@@ -6,7 +6,7 @@ const DEFAULT_COPY_PENDING_COMMENTS_TIMEOUT_MS = 2000;
  * @typedef {{
  *   id: number;
  *   isDestroyed: () => boolean;
- *   send: (channel: string, requestId: number) => void;
+ *   send: (channel: string, requestId: number, mode: 'all-in-review' | 'current') => void;
  * }} PendingCommentsWebContents
  */
 /**
@@ -60,8 +60,11 @@ const createPendingCommentsClipboardController = ({
     pending.resolve(typeof markdown === 'string' ? markdown : '');
   };
 
-  /** @param {PendingCommentsBrowserWindow} browserWindow */
-  const requestPendingCommentsMarkdown = (browserWindow) =>
+  /**
+   * @param {PendingCommentsBrowserWindow} browserWindow
+   * @param {'all-in-review' | 'current'} mode
+   */
+  const requestPendingCommentsMarkdown = (browserWindow, mode) =>
     new Promise((resolve) => {
       if (browserWindow.isDestroyed() || browserWindow.webContents.isDestroyed()) {
         resolve('');
@@ -84,13 +87,18 @@ const createPendingCommentsClipboardController = ({
         webContentsId,
       });
 
-      browserWindow.webContents.send('codiff:copyPendingCommentsRequest', requestId);
+      browserWindow.webContents.send('codiff:copyPendingCommentsRequest', requestId, mode);
     });
 
-  /** @param {ReadonlyArray<PendingCommentsBrowserWindow>} browserWindows */
-  const copyPendingCommentsToClipboard = async (browserWindows) => {
+  /**
+   * @param {ReadonlyArray<PendingCommentsBrowserWindow>} browserWindows
+   * @param {'all-in-review' | 'current'} mode
+   */
+  const copyPendingCommentsToClipboard = async (browserWindows, mode) => {
     const markdownBlocks = (
-      await Promise.all(browserWindows.map((window) => requestPendingCommentsMarkdown(window)))
+      await Promise.all(
+        browserWindows.map((window) => requestPendingCommentsMarkdown(window, mode)),
+      )
     ).filter(Boolean);
 
     if (markdownBlocks.length) {
