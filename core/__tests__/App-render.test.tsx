@@ -163,6 +163,7 @@ const createCodiffMock = (overrides: Partial<Window['codiff']> = {}): Window['co
     repositoryPathProvided: true,
     walkthrough: false,
   })),
+  getLocalBranches: vi.fn(async () => []),
   getMarkdownDocument: vi.fn(async ({ kind, path }) => ({
     content: '# Plan\n',
     id: `${kind}:${path}`,
@@ -749,8 +750,9 @@ test('the branch name renders in the top bar context', async () => {
 
   const branch = app.container.querySelector<HTMLElement>('.review-top-bar-branch');
   expect(branch?.textContent).toBe('main');
-  expect(branch?.getAttribute('title')).toBe('main');
-  expect(branch?.parentElement?.className).toBe('review-top-bar-context');
+  expect(branch?.getAttribute('title')).toBe('Switch review branch (currently main)');
+  expect(branch?.parentElement?.className).toBe('branch-picker');
+  expect(branch?.parentElement?.parentElement?.className).toBe('review-top-bar-context');
 });
 
 test('empty repository state fills the review pane for centered layout', async () => {

@@ -3,6 +3,7 @@ import { PathIcon as Path } from '@phosphor-icons/react/Path';
 import { TreeStructureIcon as TreeStructure } from '@phosphor-icons/react/TreeStructure';
 import type { FileDiffLoadedFiles } from '@pierre/diffs';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { BranchPicker } from './app/components/BranchPicker.tsx';
 import { CommandBar } from './app/components/CommandBar.tsx';
 import { KeyboardShortcutsHelp } from './app/components/KeyboardShortcutsHelp.tsx';
 import { OpenReviewSourceDialog } from './app/components/OpenReviewSourceDialog.tsx';
@@ -2006,6 +2007,10 @@ export default function App() {
   }
 
   const reviewDraftCounts = getReviewDraftCounts(reviewDraftModel, getReviewScope(state).key);
+  const displayedBranch =
+    state.source.type === 'branch-diff' || state.source.type === 'branch-working-tree'
+      ? state.source.ref
+      : state.branch;
   const selectedOrSearchPath = activeDiffSearchMatch?.filePath ?? selectedPath;
   const visibleSelectedPath =
     selectedOrSearchPath && visibleFiles.some((file) => file.path === selectedOrSearchPath)
@@ -2175,10 +2180,12 @@ export default function App() {
         }
         context={
           <>
-            {state.branch ? (
-              <span className="review-top-bar-branch" title={state.branch}>
-                {state.branch}
-              </span>
+            {displayedBranch ? (
+              <BranchPicker
+                currentBranch={displayedBranch}
+                getDraftCount={(branch) => reviewDraftScopes.get(`branch:${branch}`)?.count ?? 0}
+                onSelect={(source) => selectSource(source, { throwOnError: true })}
+              />
             ) : null}
             {sidebarSourceLabel ? (
               pullRequestUrl ? (

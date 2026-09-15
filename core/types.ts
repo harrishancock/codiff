@@ -843,6 +843,18 @@ export type DiffImageContentResult =
 
 export type CodiffTheme = 'system' | 'light' | 'dark';
 
+export type LocalBranchSummary = {
+  baseRef: string;
+  createdAt: number | null;
+  headRef: string;
+  name: string;
+  refMtime: number | null;
+  subject: string;
+  updatedAt: number;
+  upstream: string | null;
+  worktreePath: string | null;
+};
+
 export type CodiffPreferences = {
   agentBackend: 'codex' | 'claude' | 'opencode' | 'pi';
   claudeModel: string;

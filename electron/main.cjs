@@ -34,6 +34,7 @@ const { normalizeOpenCodeModel, renderOpenCodeCommand } = require('./opencode.cj
 const { createWalkthroughCommit } = require('./walkthrough-commit.cjs');
 const { readKeyboardLayout, watchKeyboardLayout } = require('./keyboard-layout.cjs');
 const { diagnoseWalkthroughMismatch } = require('./walkthrough-diagnosis.cjs');
+const { listLocalBranches } = require('./branch-list.cjs');
 const { readCommitMessageReply } = require('./walkthrough-commit-message.cjs');
 const { normalizePiModel } = require('./pi.cjs');
 const {
@@ -1889,6 +1890,11 @@ ipcMain.handle('codiff:getRepositoryHistory', async (event, limit, source) => {
 ipcMain.handle('codiff:getGitIdentity', async (event) => {
   const repositoryPath = windowRepositories.get(event.sender.id) || getLaunchPath();
   return readGitIdentity(repositoryPath);
+});
+
+ipcMain.handle('codiff:getLocalBranches', async (event) => {
+  const repositoryPath = windowRepositories.get(event.sender.id) || getLaunchPath();
+  return listLocalBranches(repositoryPath);
 });
 
 ipcMain.handle('codiff:getPreferences', () => configToPreferences(config));

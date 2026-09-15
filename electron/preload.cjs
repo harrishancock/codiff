@@ -30,6 +30,7 @@ const codiff = {
   getDiffImageContent: (request) => ipcRenderer.invoke('codiff:getDiffImageContent', request),
   getGitIdentity: () => ipcRenderer.invoke('codiff:getGitIdentity'),
   getKeyboardLayout: () => ipcRenderer.invoke('codiff:getKeyboardLayout'),
+  getLocalBranches: () => ipcRenderer.invoke('codiff:getLocalBranches'),
   getLaunchOptions: () => ipcRenderer.invoke('codiff:getLaunchOptions'),
   getMarkdownDocument: (request) => ipcRenderer.invoke('codiff:getMarkdownDocument', request),
   getPreferences: () => ipcRenderer.invoke('codiff:getPreferences'),

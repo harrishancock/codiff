@@ -15,6 +15,7 @@ import type {
   DiffSection,
   DiffSectionContentRequest,
   GitIdentity,
+  LocalBranchSummary,
   NarrativeWalkthroughRequestOptions,
   NarrativeWalkthroughResult,
   OpenReviewSourceKind,
@@ -73,6 +74,7 @@ declare global {
       getGitIdentity: () => Promise<GitIdentity>;
       getKeyboardLayout: () => Promise<NativeKeyboardLayout | null>;
       getLaunchOptions: () => Promise<CodiffLaunchOptions>;
+      getLocalBranches: () => Promise<ReadonlyArray<LocalBranchSummary>>;
       getMarkdownDocument: (request: {
         kind: CodiffMarkdownDocument['kind'];
         path: string;
