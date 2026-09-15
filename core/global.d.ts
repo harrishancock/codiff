@@ -22,6 +22,8 @@ import type {
   PlanReview,
   RepositoryHistory,
   RepositoryState,
+  ReviewDraftClassification,
+  ReviewDraftClassificationRequest,
   ReviewAssistantRequest,
   ReviewAssistantResult,
   ReviewScope,
@@ -50,6 +52,9 @@ declare global {
     codiff: {
       applyUpdate: () => Promise<CodiffUpdateStatus>;
       askReviewAssistant: (request: ReviewAssistantRequest) => Promise<ReviewAssistantResult>;
+      classifyReviewDrafts?: (
+        requests: ReadonlyArray<ReviewDraftClassificationRequest>,
+      ) => Promise<ReadonlyArray<ReviewDraftClassification>>;
       clearReviewDrafts?: () => Promise<number>;
       completePlan: (review: PlanReview, status: PlanHandoffStatus) => Promise<void>;
       createWalkthroughCommit: (

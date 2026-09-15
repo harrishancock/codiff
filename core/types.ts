@@ -294,6 +294,21 @@ export type ReviewScope = {
   type: 'branch' | 'legacy' | 'pull-request' | 'source';
 };
 
+export type ReviewDraftDisposition = 'current' | 'legacy' | 'superseded' | 'unavailable';
+
+export type ReviewDraftClassification = {
+  disposition: ReviewDraftDisposition;
+  id: string;
+  reason: string;
+};
+
+export type ReviewDraftClassificationRequest = {
+  currentSourceSnapshot?: ReviewSourceSnapshot;
+  id: string;
+  scope: ReviewScope;
+  sourceSnapshot: ReviewSourceSnapshot | null;
+};
+
 export type CodiffFeatureFlags = {
   planSharing: boolean;
   walkthroughSharing: boolean;

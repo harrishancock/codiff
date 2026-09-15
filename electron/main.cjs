@@ -71,6 +71,7 @@ const {
   getWindowIdentityForRepositoryState,
 } = require('./window-identity.cjs');
 const { createPendingCommentsClipboardController } = require('./pending-comments.cjs');
+const { classifyReviewDrafts } = require('./review-draft-classifier.cjs');
 const {
   getCommandLineLaunchOptions,
   getCommandLineRepositoryPath,
@@ -1464,6 +1465,10 @@ ipcMain.handle('codiff:getRepositoryState', async (event, source) => {
 
 ipcMain.handle('codiff:getReviewDrafts', (event) =>
   getReviewDraftStore().loadRepository(getWindowRepositoryRoot(event.sender.id)),
+);
+
+ipcMain.handle('codiff:classifyReviewDrafts', (event, requests) =>
+  classifyReviewDrafts(getWindowRepositoryRoot(event.sender.id), requests),
 );
 
 ipcMain.handle('codiff:saveReviewDrafts', (event, snapshot) =>
