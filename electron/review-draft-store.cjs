@@ -8,7 +8,8 @@ const legacyScope = { key: 'legacy', label: 'Legacy / recovered', type: 'legacy'
 const schema = `
   CREATE TABLE IF NOT EXISTS review_draft_sources (
     repository_root TEXT NOT NULL, scope_key TEXT NOT NULL, scope_json TEXT NOT NULL,
-    source_key TEXT NOT NULL, source_json TEXT NOT NULL, revision INTEGER NOT NULL,
+    source_key TEXT NOT NULL, source_json TEXT NOT NULL, source_snapshot_json TEXT,
+    revision INTEGER NOT NULL,
     updated_at TEXT NOT NULL, PRIMARY KEY (repository_root, scope_key, source_key)
   ) STRICT;
   CREATE TABLE IF NOT EXISTS review_drafts (
@@ -34,16 +35,17 @@ const initializeSchema = (database) => {
       const scopeJSON = JSON.stringify(legacyScope).replaceAll("'", "''");
       database.exec(`
         INSERT INTO review_draft_sources
-          (repository_root, scope_key, scope_json, source_key, source_json, revision, updated_at)
-        SELECT repository_root, 'legacy', '${scopeJSON}', source_key, source_json, revision,
-          updated_at FROM review_draft_sources_v1;
+          (repository_root, scope_key, scope_json, source_key, source_json, source_snapshot_json,
+           revision, updated_at)
+        SELECT repository_root, 'legacy', '${scopeJSON}', source_key, source_json, NULL,
+          revision, updated_at FROM review_draft_sources_v1;
         INSERT INTO review_drafts
           (repository_root, scope_key, source_key, comment_id, comment_json, updated_at)
         SELECT repository_root, 'legacy', source_key, comment_id, comment_json, updated_at
           FROM review_drafts_v1;
         DROP TABLE review_drafts_v1;
         DROP TABLE review_draft_sources_v1;
-        PRAGMA user_version = 2;
+        PRAGMA user_version = 3;
         COMMIT;
       `);
     } catch (error) {
@@ -52,8 +54,17 @@ const initializeSchema = (database) => {
     }
     return;
   }
+  if (version === 2) {
+    database.exec(`
+      BEGIN IMMEDIATE;
+      ALTER TABLE review_draft_sources ADD COLUMN source_snapshot_json TEXT;
+      PRAGMA user_version = 3;
+      COMMIT;
+    `);
+    return;
+  }
   database.exec(schema);
-  database.exec('PRAGMA user_version = 2;');
+  database.exec('PRAGMA user_version = 3;');
 };
 
 /** @param {string} userDataPath */
@@ -70,17 +81,19 @@ const createReviewDraftStore = (databasePath) => {
   const readRevision = database.prepare(`SELECT revision FROM review_draft_sources
     WHERE repository_root = ? AND scope_key = ? AND source_key = ?`);
   const upsertSource = database.prepare(`INSERT INTO review_draft_sources
-    (repository_root, scope_key, scope_json, source_key, source_json, revision, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?) ON CONFLICT (repository_root, scope_key, source_key)
+    (repository_root, scope_key, scope_json, source_key, source_json, source_snapshot_json,
+     revision, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (repository_root, scope_key, source_key)
     DO UPDATE SET scope_json = excluded.scope_json, source_json = excluded.source_json,
-      revision = excluded.revision, updated_at = excluded.updated_at`);
+      source_snapshot_json = excluded.source_snapshot_json, revision = excluded.revision,
+      updated_at = excluded.updated_at`);
   const deleteSourceDrafts = database.prepare(`DELETE FROM review_drafts
     WHERE repository_root = ? AND scope_key = ? AND source_key = ?`);
   const insertDraft = database.prepare(`INSERT INTO review_drafts
     (repository_root, scope_key, source_key, comment_id, comment_json, updated_at)
     VALUES (?, ?, ?, ?, ?, ?)`);
   const loadSources = database.prepare(`SELECT scope_key, scope_json, source_key, source_json,
-    revision FROM review_draft_sources WHERE repository_root = ?
+    source_snapshot_json, revision FROM review_draft_sources WHERE repository_root = ?
     ORDER BY updated_at, scope_key, source_key`);
   const loadDrafts = database.prepare(`SELECT comment_json FROM review_drafts
     WHERE repository_root = ? AND scope_key = ? AND source_key = ? ORDER BY rowid`);
@@ -105,7 +118,7 @@ const createReviewDraftStore = (databasePath) => {
     loadRepository(repositoryRoot) {
       return loadSources.all(repositoryRoot).map((rawSource) => {
         const row =
-          /** @type {{revision: number, scope_json: string, scope_key: string, source_json: string, source_key: string}} */ (
+          /** @type {{revision: number, scope_json: string, scope_key: string, source_json: string, source_key: string, source_snapshot_json: string | null}} */ (
             rawSource
           );
         return {
@@ -119,10 +132,11 @@ const createReviewDraftStore = (databasePath) => {
           scopeKey: row.scope_key,
           source: JSON.parse(row.source_json),
           sourceKey: row.source_key,
+          sourceSnapshot: row.source_snapshot_json ? JSON.parse(row.source_snapshot_json) : null,
         };
       });
     },
-    /** @param {{comments: ReadonlyArray<Record<string, unknown>>, repositoryRoot: string, revision: number, scope: Record<string, unknown>, scopeKey: string, source: Record<string, unknown>, sourceKey: string}} snapshot */
+    /** @param {{comments: ReadonlyArray<Record<string, unknown>>, repositoryRoot: string, revision: number, scope: Record<string, unknown>, scopeKey: string, source: Record<string, unknown>, sourceKey: string, sourceSnapshot: Record<string, unknown>}} snapshot */
     saveSource(snapshot) {
       const current = /** @type {{revision: number} | undefined} */ (
         readRevision.get(snapshot.repositoryRoot, snapshot.scopeKey, snapshot.sourceKey)
@@ -140,6 +154,7 @@ const createReviewDraftStore = (databasePath) => {
           JSON.stringify(snapshot.scope),
           snapshot.sourceKey,
           JSON.stringify(snapshot.source),
+          JSON.stringify(snapshot.sourceSnapshot),
           snapshot.revision,
           updatedAt,
         );

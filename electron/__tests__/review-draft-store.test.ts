@@ -16,6 +16,7 @@ const { createReviewDraftStore } = require('../review-draft-store.cjs') as {
       scope: Record<string, unknown>;
       scopeKey: string;
       source: Record<string, unknown>;
+      sourceSnapshot: Record<string, unknown> | null;
       sourceKey: string;
     }>;
     saveSource: (snapshot: {
@@ -25,6 +26,7 @@ const { createReviewDraftStore } = require('../review-draft-store.cjs') as {
       scope: Record<string, unknown>;
       scopeKey: string;
       source: Record<string, unknown>;
+      sourceSnapshot: Record<string, unknown>;
       sourceKey: string;
     }) => boolean;
   };
@@ -50,6 +52,7 @@ test('persists mutable drafts by repository and source', () => {
     scope,
     scopeKey: scope.key,
     source: { ref: 'abc123', type: 'commit' },
+    sourceSnapshot: { commit: 'abc123', type: 'commit' },
     sourceKey: 'commit:abc123',
   };
 
@@ -61,6 +64,7 @@ test('persists mutable drafts by repository and source', () => {
       scope,
       scopeKey: scope.key,
       source: snapshot.source,
+      sourceSnapshot: snapshot.sourceSnapshot,
       sourceKey: snapshot.sourceKey,
     },
   ]);
@@ -75,6 +79,7 @@ test('rejects stale source snapshots and excludes submitted comments', () => {
     scope,
     scopeKey: scope.key,
     source: { type: 'working-tree' },
+    sourceSnapshot: { filesFingerprint: 'files-1', head: 'abc123', type: 'working-tree' },
     sourceKey: 'working-tree',
   };
 
@@ -117,6 +122,7 @@ test('clears every source for only the selected repository', () => {
       scope,
       scopeKey: scope.key,
       source: { type: 'working-tree' },
+      sourceSnapshot: { filesFingerprint: sourceKey, head: 'abc123', type: 'working-tree' },
       sourceKey,
     });
   }
@@ -137,6 +143,7 @@ test('keeps the same source independent in different review scopes', () => {
       scope: { key: `branch:${branch}`, label: branch, type: 'branch' },
       scopeKey: `branch:${branch}`,
       source: { type: 'working-tree' },
+      sourceSnapshot: { filesFingerprint: branch, head: 'abc123', type: 'working-tree' },
       sourceKey: 'working-tree',
     });
   }
@@ -181,6 +188,50 @@ test('migrates unscoped drafts into the legacy recovery scope', () => {
       revision: 4,
       scope: { key: 'legacy', label: 'Legacy / recovered', type: 'legacy' },
       scopeKey: 'legacy',
+      sourceSnapshot: null,
+    });
+    store.close();
+  } finally {
+    rmSync(directory, { force: true, recursive: true });
+  }
+});
+
+test('migrates populated scoped drafts without inventing a resolved snapshot', () => {
+  const directory = mkdtempSync(join(tmpdir(), 'codiff-drafts-'));
+  const databasePath = join(directory, 'drafts.sqlite3');
+  const database = new DatabaseSync(databasePath);
+  database.exec(`
+    CREATE TABLE review_draft_sources (
+      repository_root TEXT NOT NULL, scope_key TEXT NOT NULL, scope_json TEXT NOT NULL,
+      source_key TEXT NOT NULL, source_json TEXT NOT NULL, revision INTEGER NOT NULL,
+      updated_at TEXT NOT NULL, PRIMARY KEY (repository_root, scope_key, source_key)
+    ) STRICT;
+    CREATE TABLE review_drafts (
+      repository_root TEXT NOT NULL, scope_key TEXT NOT NULL, source_key TEXT NOT NULL,
+      comment_id TEXT NOT NULL, comment_json TEXT NOT NULL, updated_at TEXT NOT NULL,
+      PRIMARY KEY (repository_root, scope_key, source_key, comment_id),
+      FOREIGN KEY (repository_root, scope_key, source_key)
+        REFERENCES review_draft_sources (repository_root, scope_key, source_key) ON DELETE CASCADE
+    ) STRICT;
+    INSERT INTO review_draft_sources VALUES
+      ('/repo', 'branch:feature', '${JSON.stringify(scope)}', 'range:main...HEAD',
+       '{"type":"range","base":"main","head":"HEAD","symmetric":true}', 7,
+       '2026-09-14T00:00:00Z');
+    INSERT INTO review_drafts VALUES
+      ('/repo', 'branch:feature', 'range:main...HEAD', 'draft-1',
+       '${JSON.stringify(comment('draft-1', 'Preserve this.'))}', '2026-09-14T00:00:00Z');
+    PRAGMA user_version = 2;
+  `);
+  database.close();
+
+  try {
+    const store = createReviewDraftStore(databasePath);
+    expect(store.loadRepository('/repo')[0]).toMatchObject({
+      comments: [comment('draft-1', 'Preserve this.')],
+      revision: 7,
+      scope,
+      source: { base: 'main', head: 'HEAD', symmetric: true, type: 'range' },
+      sourceSnapshot: null,
     });
     store.close();
   } finally {

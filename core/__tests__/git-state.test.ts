@@ -1792,6 +1792,7 @@ test('readRepositoryState reads commit diffs from short hashes', async () => {
       ref: commit,
       type: 'commit',
     });
+    expect(state.sourceSnapshot).toEqual({ commit, type: 'commit' });
     expect(state.files.map((file) => file.path).sort()).toEqual(['file.txt', 'new.txt']);
     expect(state.files.every((file) => file.sections[0]?.kind === 'commit')).toBe(true);
     expect(state.files.find((file) => file.path === 'file.txt')?.sections[0].patch).toContain(
@@ -1942,6 +1943,15 @@ test('readRepositoryState builds a diff for a base...head range', () =>
     });
 
     expect(state.source).toEqual({ base: 'base', head: 'head', symmetric: true, type: 'range' });
+    expect(state.sourceSnapshot).toEqual({
+      base: 'base',
+      head: 'head',
+      mergeBase: (await git(repo, ['merge-base', 'base', 'head'])).trim(),
+      resolvedBase: (await git(repo, ['rev-parse', 'base'])).trim(),
+      resolvedHead: (await git(repo, ['rev-parse', 'head'])).trim(),
+      symmetric: true,
+      type: 'range',
+    });
     expect(state.files.map((file) => file.path).sort()).toEqual(['added.txt', 'keep.txt']);
     const added = state.files.find((file) => file.path === 'added.txt');
     expect(added?.status).toBe('added');

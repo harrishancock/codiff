@@ -176,6 +176,42 @@ export type ReviewSource =
       url: string;
     };
 
+export type ReviewSourceSnapshot =
+  | { commit: string; type: 'commit' }
+  | {
+      baseRef: string;
+      headRef: string;
+      ref: string;
+      type: 'branch-diff';
+    }
+  | {
+      baseRef: string;
+      filesFingerprint: string;
+      headRef: string;
+      ref: string;
+      type: 'branch-working-tree';
+    }
+  | {
+      base: string;
+      head: string;
+      mergeBase?: string;
+      resolvedBase: string;
+      resolvedHead: string;
+      symmetric: boolean;
+      type: 'range';
+    }
+  | {
+      headSha: string;
+      provider: 'github' | 'gitlab';
+      type: 'pull-request';
+      url: string;
+    }
+  | {
+      filesFingerprint: string;
+      head: string | null;
+      type: 'working-tree';
+    };
+
 /** Sources that can be entered from the palette or native application menu. */
 export type OpenReviewSourceKind = 'branch' | 'commit' | 'pull-request';
 
@@ -249,6 +285,7 @@ export type RepositoryState = {
   reviewComments?: ReadonlyArray<PullRequestExistingReviewComment>;
   root: string;
   source: ReviewSource;
+  sourceSnapshot?: ReviewSourceSnapshot;
 };
 
 export type ReviewScope = {

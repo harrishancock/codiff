@@ -657,7 +657,10 @@ export default function App() {
 
   useEffect(() => {
     const currentState = stateRef.current;
-    if (!currentState || reviewDraftRepositoryRootRef.current !== currentState.root) {
+    if (
+      !currentState?.sourceSnapshot ||
+      reviewDraftRepositoryRootRef.current !== currentState.root
+    ) {
       return;
     }
     const saveReviewDrafts = window.codiff.saveReviewDrafts;
@@ -683,6 +686,7 @@ export default function App() {
       scopeKey: scope.key,
       source: currentState.source,
       sourceKey,
+      sourceSnapshot: currentState.sourceSnapshot,
     })
       .then(() => {
         reviewDraftSaveErrorRef.current = null;

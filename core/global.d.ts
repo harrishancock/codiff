@@ -25,6 +25,7 @@ import type {
   ReviewAssistantRequest,
   ReviewAssistantResult,
   ReviewScope,
+  ReviewSourceSnapshot,
   ReviewSource,
   SaveMarkdownDocumentRequest,
   SaveMarkdownDocumentResult,
@@ -85,6 +86,7 @@ declare global {
           scopeKey: string;
           source: ReviewSource;
           sourceKey: string;
+          sourceSnapshot?: ReviewSourceSnapshot | null;
         }>
       >;
       getTerminalHelperStatus: () => Promise<TerminalHelperStatus>;
@@ -131,6 +133,7 @@ declare global {
         scopeKey: string;
         source: ReviewSource;
         sourceKey: string;
+        sourceSnapshot: ReviewSourceSnapshot;
       }) => Promise<boolean>;
       setDiffStyle: (value: CodiffPreferences['diffStyle']) => Promise<void>;
       setShowOutdated: (value: boolean) => Promise<void>;

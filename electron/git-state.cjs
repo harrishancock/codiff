@@ -1,6 +1,12 @@
 // @ts-check
 
-const { git, gitOrEmpty, parseStatus, validateRepositoryPath } = require('./git-state/common.cjs');
+const {
+  getFingerprint,
+  git,
+  gitOrEmpty,
+  parseStatus,
+  validateRepositoryPath,
+} = require('./git-state/common.cjs');
 const {
   listRepositoryHistory,
   readBranchImageContent,
@@ -64,8 +70,66 @@ const { annotateGeneratedFiles } = require('./generated-files.cjs');
  * @typedef {import('../core/types.ts').DiffImageContentResult} DiffImageContentResult
  * @typedef {import('../core/types.ts').RepositoryHistory} RepositoryHistory
  * @typedef {import('../core/types.ts').RepositoryState} RepositoryState
+ * @typedef {import('../core/types.ts').ReviewSourceSnapshot} ReviewSourceSnapshot
  * @typedef {import('../core/types.ts').ReviewSource} ReviewSource
  */
+
+/** @param {RepositoryState} state @returns {Promise<ReviewSourceSnapshot>} */
+const createSourceSnapshot = async (state) => {
+  const source = state.source;
+  if (source.type === 'commit') return { commit: source.ref, type: 'commit' };
+  if (source.type === 'branch-diff') return { ...source };
+  if (source.type === 'range') {
+    const [resolvedBase, resolvedHead] = await Promise.all([
+      git(state.root, ['rev-parse', '--verify', `${source.base}^{commit}`]).then((value) =>
+        value.trim(),
+      ),
+      git(state.root, ['rev-parse', '--verify', `${source.head}^{commit}`]).then((value) =>
+        value.trim(),
+      ),
+    ]);
+    const mergeBase = source.symmetric
+      ? (await git(state.root, ['merge-base', resolvedBase, resolvedHead])).trim()
+      : undefined;
+    return {
+      base: source.base,
+      head: source.head,
+      ...(mergeBase ? { mergeBase } : {}),
+      resolvedBase,
+      resolvedHead,
+      symmetric: source.symmetric,
+      type: 'range',
+    };
+  }
+  if (source.type === 'pull-request') {
+    if (!source.headSha || !source.provider) {
+      throw new Error('The pull request did not provide a resolved head commit.');
+    }
+    return {
+      headSha: source.headSha,
+      provider: source.provider,
+      type: 'pull-request',
+      url: source.url,
+    };
+  }
+
+  const filesFingerprint = getFingerprint(
+    state.files
+      .map(({ fingerprint, oldPath, path }) => `${path}\0${oldPath || ''}\0${fingerprint}`)
+      .join('\n'),
+  );
+  if (source.type === 'branch-working-tree') {
+    if (!source.baseRef || !source.headRef) {
+      throw new Error('The branch comparison did not provide resolved commits.');
+    }
+    return { ...source, baseRef: source.baseRef, filesFingerprint, headRef: source.headRef };
+  }
+  return {
+    filesFingerprint,
+    head: (await gitOrEmpty(state.root, ['rev-parse', '--verify', 'HEAD^{commit}'])).trim() || null,
+    type: 'working-tree',
+  };
+};
 
 /** @param {string} launchPath @param {ReviewSource} [source] @param {{showWhitespace?: boolean}} [options] @returns {Promise<RepositoryState>} */
 const readRepositoryState = async (launchPath, source = { type: 'working-tree' }, options = {}) => {
@@ -98,7 +162,8 @@ const readRepositoryState = async (launchPath, source = { type: 'working-tree' }
     gitOrEmpty(state.root, ['symbolic-ref', '--short', 'HEAD']),
     comparisonState ? state : annotateGeneratedFiles(state),
   ]);
-  return { ...annotatedState, branch: branch.trim() || null };
+  const repositoryState = { ...annotatedState, branch: branch.trim() || null };
+  return { ...repositoryState, sourceSnapshot: await createSourceSnapshot(repositoryState) };
 };
 
 /**
