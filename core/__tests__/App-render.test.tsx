@@ -756,6 +756,12 @@ test('empty repository state fills the review pane for centered layout', async (
   container.remove();
 });
 
+test('top-bar popovers are painted above the review pane', () => {
+  const css = readFileSync(resolve('core/App.css'), 'utf8');
+  const topBarRule = css.match(/\.review-top-bar \{([^}]*)\}/)?.[1];
+  expect(topBarRule).toMatch(/z-index:\s*[1-9]\d*;/);
+});
+
 test('showWhitespace config changes reload the current repository state', async () => {
   let configListener: ((config: ReturnType<typeof createDefaultConfig>) => void) | null = null;
   const nextConfig = createDefaultConfig();
