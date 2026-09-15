@@ -4,7 +4,11 @@
 
 import { act } from 'react';
 import { beforeEach, expect, test, vi } from 'vite-plus/test';
-import { CopyAllCommentsButton, MovedCodePaletteControl } from '../app/components/Panels.tsx';
+import {
+  ClearReviewDraftsButton,
+  CopyAllCommentsButton,
+  MovedCodePaletteControl,
+} from '../app/components/Panels.tsx';
 import { renderReact } from './helpers/react.tsx';
 
 beforeEach(() => {
@@ -84,6 +88,20 @@ test('disables all copy actions when there are no drafts', async () => {
   const toggle = app.container.querySelector<HTMLButtonElement>('.copy-comments-toggle');
   expect(button?.disabled).toBe(true);
   expect(toggle?.disabled).toBe(true);
+});
+
+test('confirms contextual clearing with the current review count', async () => {
+  const onClear = vi.fn(() => Promise.resolve());
+  vi.spyOn(window, 'confirm').mockReturnValue(true);
+  await using app = await renderReact(
+    <ClearReviewDraftsButton commentCount={3} onClear={onClear} reviewLabel="feature" />,
+  );
+
+  const button = app.container.querySelector<HTMLButtonElement>('.clear-review-drafts-button');
+  expect(button?.textContent).toBe('Clear (3)');
+  await act(() => button?.click());
+  expect(window.confirm).toHaveBeenCalledWith('Clear 3 staged review comments from feature?');
+  expect(onClear).toHaveBeenCalledOnce();
 });
 
 test('cycles through moved-code palettes including off', async () => {

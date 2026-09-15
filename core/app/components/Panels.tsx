@@ -7,6 +7,7 @@ import { CheckCircleIcon as CheckCircle } from '@phosphor-icons/react/CheckCircl
 import { CircleNotchIcon as CircleNotch } from '@phosphor-icons/react/CircleNotch';
 import { PowerIcon as Power } from '@phosphor-icons/react/Power';
 import { SealQuestionIcon as SealQuestion } from '@phosphor-icons/react/SealQuestion';
+import { TrashIcon as Trash } from '@phosphor-icons/react/Trash';
 import { WarningOctagonIcon as WarningOctagon } from '@phosphor-icons/react/WarningOctagon';
 import { XIcon as X } from '@phosphor-icons/react/X';
 import { Copy as LucideCopy } from 'lucide-react';
@@ -473,6 +474,40 @@ export function CopyAllCommentsButton({
         </div>
       ) : null}
     </div>
+  );
+}
+
+export function ClearReviewDraftsButton({
+  commentCount,
+  onClear,
+  reviewLabel,
+}: {
+  commentCount: number;
+  onClear: () => Promise<void>;
+  reviewLabel: string;
+}) {
+  if (commentCount === 0) {
+    return null;
+  }
+  return (
+    <button
+      aria-label={`Clear ${commentCount} staged review ${commentCount === 1 ? 'comment' : 'comments'} from ${reviewLabel}`}
+      className="clear-review-drafts-button"
+      onClick={() => {
+        if (
+          window.confirm(
+            `Clear ${commentCount} staged review ${commentCount === 1 ? 'comment' : 'comments'} from ${reviewLabel}?`,
+          )
+        ) {
+          void onClear();
+        }
+      }}
+      title={`Clear all staged comments in the current review scope (${reviewLabel})`}
+      type="button"
+    >
+      <Trash aria-hidden size={14} weight="bold" />
+      <span>Clear ({commentCount})</span>
+    </button>
   );
 }
 

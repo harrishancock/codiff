@@ -3945,6 +3945,7 @@ diffs-container .review-comment-thread {
    so the controls read as siblings rather than as different kinds of control. */
 .copy-comments-button,
 .copy-comments-toggle,
+.clear-review-drafts-button,
 .moved-code-palette-control {
   -webkit-app-region: no-drag;
   align-items: center;
@@ -4168,6 +4169,7 @@ diffs-container .review-comment-thread {
 
 .copy-comments-button:hover:not(:disabled),
 .copy-comments-toggle:hover:not(:disabled),
+.clear-review-drafts-button:hover,
 .moved-code-palette-control:hover {
   background: rgb(127 127 127 / 0.14);
   color: var(--sidebar-text);
@@ -4175,6 +4177,7 @@ diffs-container .review-comment-thread {
 
 .copy-comments-button:active:not(:disabled),
 .copy-comments-toggle:active:not(:disabled),
+.clear-review-drafts-button:active,
 .moved-code-palette-control:active {
   background: rgb(127 127 127 / 0.2);
   color: var(--sidebar-text);
