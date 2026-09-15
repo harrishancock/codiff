@@ -2,6 +2,7 @@
 
 root=$(CDPATH= cd -P -- "$(dirname "$0")/.." && pwd -P) || exit 1
 entry="$root/bin/codiff.js"
+caller_cwd=$(pwd -P) || exit 1
 
 if command -v node >/dev/null 2>&1 &&
   node -e 'process.exit(Number(process.versions.node.split(".")[0]) >= 23 ? 0 : 1)' \
@@ -10,7 +11,12 @@ if command -v node >/dev/null 2>&1 &&
 fi
 
 if [ -e "$root/.git" ] && command -v mise >/dev/null 2>&1; then
-  exec mise exec -C "$root" -- node "$entry" "$@"
+  exec mise exec -C "$root" -- sh -c '
+    caller_cwd=$1
+    shift
+    cd "$caller_cwd" || exit 1
+    exec node "$@"
+  ' sh "$caller_cwd" "$entry" "$@"
 fi
 
 node_version=$(node --version 2>/dev/null || printf 'not found')
