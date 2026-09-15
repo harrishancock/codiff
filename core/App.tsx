@@ -652,6 +652,18 @@ export default function App() {
     });
   }, [narrativeWalkthroughRef, reviewCommentsRef, walkthroughErrorRef]);
 
+  const getCurrentReviewCommentsJSON = useCallback(() => {
+    const currentState = stateRef.current;
+    if (!currentState) {
+      return '[]';
+    }
+    const activeScopeKey = getReviewScope(currentState).key;
+    return buildReviewDraftsJSON(
+      reviewDraftModel,
+      ({ disposition, scopeKey }) => scopeKey === activeScopeKey && disposition === 'current',
+    );
+  }, [reviewDraftModel]);
+
   const getAllReviewCommentsJSON = useCallback(() => {
     const currentState = stateRef.current;
     if (!currentState) {
@@ -660,6 +672,11 @@ export default function App() {
     const activeScopeKey = getReviewScope(currentState).key;
     return buildReviewDraftsJSON(reviewDraftModel, ({ scopeKey }) => scopeKey === activeScopeKey);
   }, [reviewDraftModel]);
+
+  const getAllRepositoryReviewCommentsJSON = useCallback(
+    () => buildReviewDraftsJSON(reviewDraftModel),
+    [reviewDraftModel],
+  );
 
   useEffect(() => {
     const currentState = stateRef.current;
@@ -1930,10 +1947,7 @@ export default function App() {
     );
   }
 
-  const allReviewCommentCount = getReviewDraftCounts(
-    reviewDraftModel,
-    getReviewScope(state).key,
-  ).allInReview;
+  const reviewDraftCounts = getReviewDraftCounts(reviewDraftModel, getReviewScope(state).key);
   const selectedOrSearchPath = activeDiffSearchMatch?.filePath ?? selectedPath;
   const visibleSelectedPath =
     selectedOrSearchPath && visibleFiles.some((file) => file.path === selectedOrSearchPath)
@@ -2094,8 +2108,10 @@ export default function App() {
           <>
             <MovedCodePaletteControl onChange={setMovedCodePalette} value={movedCodePalette} />
             <CopyAllCommentsButton
-              commentCount={allReviewCommentCount}
-              getJSON={getAllReviewCommentsJSON}
+              counts={reviewDraftCounts}
+              getAllInReviewJSON={getAllReviewCommentsJSON}
+              getAllRepositoryJSON={getAllRepositoryReviewCommentsJSON}
+              getCurrentJSON={getCurrentReviewCommentsJSON}
             />
           </>
         }

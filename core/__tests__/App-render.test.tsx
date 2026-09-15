@@ -460,7 +460,7 @@ test('restores durable review drafts and writes later revisions', async () => {
       sourceKey: 'working-tree',
     }),
   );
-  expect(view.container.querySelector('.copy-comments-button')?.textContent).toBe('All (4)');
+  expect(view.container.querySelector('.copy-comments-button')?.textContent).toBe('Current (4)');
   expect(view.container.querySelector('.history-entry-comment-count')?.textContent).toBe('1');
   expect(view.container.textContent).toContain('Other drafts');
   expect(view.container.textContent).toContain('deadbee');

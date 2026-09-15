@@ -381,39 +381,96 @@ export function DiffSearchPanel({
 }
 
 export function CopyAllCommentsButton({
-  commentCount,
-  getJSON,
+  counts,
+  getAllInReviewJSON,
+  getAllRepositoryJSON,
+  getCurrentJSON,
 }: {
-  commentCount: number;
-  getJSON: () => string;
+  counts: { allInReview: number; allRepository: number; current: number };
+  getAllInReviewJSON: () => string;
+  getAllRepositoryJSON: () => string;
+  getCurrentJSON: () => string;
 }) {
   const [copied, markCopied] = useCopiedState(2000);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
 
-  const copyComments = useCallback(async () => {
-    await navigator.clipboard.writeText(getJSON());
-    markCopied();
-  }, [getJSON, markCopied]);
+  const copyComments = useCallback(
+    async (getJSON: () => string) => {
+      await navigator.clipboard.writeText(getJSON());
+      setMenuOpen(false);
+      markCopied();
+    },
+    [markCopied],
+  );
+
+  useEffect(() => {
+    if (!menuOpen) {
+      return;
+    }
+    const closeMenu = (event: MouseEvent) => {
+      if (!containerRef.current?.contains(event.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', closeMenu);
+    return () => document.removeEventListener('mousedown', closeMenu);
+  }, [menuOpen]);
 
   return (
-    <button
-      aria-label={
-        commentCount === 0
-          ? 'Copy all review comments as JSON, no comments yet'
-          : `Copy all ${commentCount} review ${commentCount === 1 ? 'comment' : 'comments'} as JSON`
-      }
-      className={`copy-comments-button${copied ? ' copied' : ''}`}
-      disabled={commentCount === 0}
-      onClick={() => void copyComments()}
-      title="Copy all review comments as JSON"
-      type="button"
-    >
-      {copied ? (
-        <Check aria-hidden className="copy-comments-icon check" size={15} weight="bold" />
-      ) : (
-        <LucideCopy aria-hidden className="copy-comments-icon" size={14} strokeWidth={2.25} />
-      )}
-      <span className="copy-comments-count">All ({commentCount})</span>
-    </button>
+    <div className="copy-comments-action" ref={containerRef}>
+      <button
+        aria-label={
+          counts.current === 0
+            ? 'Copy current review comments as JSON, no current comments yet'
+            : `Copy ${counts.current} current review ${counts.current === 1 ? 'comment' : 'comments'} as JSON`
+        }
+        className={`copy-comments-button${copied ? ' copied' : ''}`}
+        disabled={counts.current === 0}
+        onClick={() => void copyComments(getCurrentJSON)}
+        title="Copy current review comments as JSON"
+        type="button"
+      >
+        {copied ? (
+          <Check aria-hidden className="copy-comments-icon check" size={15} weight="bold" />
+        ) : (
+          <LucideCopy aria-hidden className="copy-comments-icon" size={14} strokeWidth={2.25} />
+        )}
+        <span className="copy-comments-count">Current ({counts.current})</span>
+      </button>
+      <button
+        aria-expanded={menuOpen}
+        aria-haspopup="menu"
+        aria-label="More review comment copy options"
+        className="copy-comments-toggle"
+        disabled={counts.allRepository === 0}
+        onClick={() => setMenuOpen((value) => !value)}
+        title="More copy options"
+        type="button"
+      >
+        <CaretDown aria-hidden size={12} weight="bold" />
+      </button>
+      {menuOpen ? (
+        <div className="copy-comments-menu" role="menu">
+          <button
+            disabled={counts.allInReview === 0}
+            onClick={() => void copyComments(getAllInReviewJSON)}
+            role="menuitem"
+            type="button"
+          >
+            All in Review ({counts.allInReview})
+          </button>
+          <button
+            disabled={counts.allRepository === 0}
+            onClick={() => void copyComments(getAllRepositoryJSON)}
+            role="menuitem"
+            type="button"
+          >
+            All Repository Drafts ({counts.allRepository})
+          </button>
+        </div>
+      ) : null}
+    </div>
   );
 }
 

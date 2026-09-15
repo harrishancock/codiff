@@ -3,30 +3,85 @@
  */
 
 import { act } from 'react';
-import { expect, test, vi } from 'vite-plus/test';
+import { beforeEach, expect, test, vi } from 'vite-plus/test';
 import { CopyAllCommentsButton, MovedCodePaletteControl } from '../app/components/Panels.tsx';
 import { renderReact } from './helpers/react.tsx';
 
-test('shows the total pending comment count on the copy-all button', async () => {
-  await using app = await renderReact(
-    <CopyAllCommentsButton commentCount={17} getJSON={() => '[]'} />,
-  );
-
-  const button = app.container.querySelector<HTMLButtonElement>('.copy-comments-button');
-  expect(button?.getAttribute('aria-label')).toBe('Copy all 17 review comments as JSON');
-  expect(button?.textContent).toBe('All (17)');
+beforeEach(() => {
+  Object.defineProperty(navigator, 'clipboard', {
+    configurable: true,
+    value: { writeText: vi.fn(() => Promise.resolve()) },
+  });
 });
 
-test('disables the copy-all button when there are no pending comments', async () => {
+const renderCopyCommentsButton = () =>
+  renderReact(
+    <CopyAllCommentsButton
+      counts={{ allInReview: 5, allRepository: 8, current: 2 }}
+      getAllInReviewJSON={() => 'all-in-review'}
+      getAllRepositoryJSON={() => 'all-repository'}
+      getCurrentJSON={() => 'current'}
+    />,
+  );
+
+test('copies current review comments from the main action', async () => {
+  await using app = await renderCopyCommentsButton();
+
+  const button = app.container.querySelector<HTMLButtonElement>('.copy-comments-button');
+  expect(button?.getAttribute('aria-label')).toBe('Copy 2 current review comments as JSON');
+  expect(button?.textContent).toBe('Current (2)');
+  await act(() => button?.click());
+  expect(navigator.clipboard.writeText).toHaveBeenCalledWith('current');
+});
+
+test('offers broader review and repository copy actions', async () => {
+  await using app = await renderCopyCommentsButton();
+
+  const toggle = app.container.querySelector<HTMLButtonElement>('.copy-comments-toggle');
+  await act(() => toggle?.click());
+
+  const actions = [
+    ...app.container.querySelectorAll<HTMLButtonElement>('.copy-comments-menu button'),
+  ];
+  expect(actions.map(({ textContent }) => textContent)).toEqual([
+    'All in Review (5)',
+    'All Repository Drafts (8)',
+  ]);
+
+  await act(() => actions[1]?.click());
+  expect(navigator.clipboard.writeText).toHaveBeenCalledWith('all-repository');
+});
+
+test('keeps broader copy actions available when there are no current comments', async () => {
   await using app = await renderReact(
-    <CopyAllCommentsButton commentCount={0} getJSON={() => '[]'} />,
+    <CopyAllCommentsButton
+      counts={{ allInReview: 3, allRepository: 4, current: 0 }}
+      getAllInReviewJSON={() => 'all-in-review'}
+      getAllRepositoryJSON={() => 'all-repository'}
+      getCurrentJSON={() => 'current'}
+    />,
   );
 
   const button = app.container.querySelector<HTMLButtonElement>('.copy-comments-button');
+  const toggle = app.container.querySelector<HTMLButtonElement>('.copy-comments-toggle');
   expect(button?.disabled).toBe(true);
-  expect(button?.getAttribute('aria-label')).toBe(
-    'Copy all review comments as JSON, no comments yet',
+  expect(toggle?.disabled).toBe(false);
+});
+
+test('disables all copy actions when there are no drafts', async () => {
+  await using app = await renderReact(
+    <CopyAllCommentsButton
+      counts={{ allInReview: 0, allRepository: 0, current: 0 }}
+      getAllInReviewJSON={() => 'all-in-review'}
+      getAllRepositoryJSON={() => 'all-repository'}
+      getCurrentJSON={() => 'current'}
+    />,
   );
+
+  const button = app.container.querySelector<HTMLButtonElement>('.copy-comments-button');
+  const toggle = app.container.querySelector<HTMLButtonElement>('.copy-comments-toggle');
+  expect(button?.disabled).toBe(true);
+  expect(toggle?.disabled).toBe(true);
 });
 
 test('cycles through moved-code palettes including off', async () => {
