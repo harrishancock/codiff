@@ -1,0 +1,20 @@
+#!/bin/sh
+
+root=$(CDPATH= cd -P -- "$(dirname "$0")/.." && pwd -P) || exit 1
+entry="$root/bin/codiff.js"
+
+if command -v node >/dev/null 2>&1 &&
+  node -e 'process.exit(Number(process.versions.node.split(".")[0]) >= 23 ? 0 : 1)' \
+    >/dev/null 2>&1; then
+  exec node "$entry" "$@"
+fi
+
+if [ -e "$root/.git" ] && command -v mise >/dev/null 2>&1; then
+  exec mise exec -C "$root" -- node "$entry" "$@"
+fi
+
+node_version=$(node --version 2>/dev/null || printf 'not found')
+printf '%s\n' \
+  "codiff: Node.js 23 or newer is required (found: $node_version)." \
+  'Install a supported Node.js version and try again.' >&2
+exit 1
