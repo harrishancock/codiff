@@ -1331,6 +1331,73 @@ html[data-codiff-platform='darwin'] .sidebar {
   padding: 10px 8px;
 }
 
+.sidebar-panes {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.sidebar-pane {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  min-height: 32px;
+  overflow: hidden;
+}
+
+.sidebar-pane.open {
+  flex: 1 1 0;
+  min-height: 96px;
+}
+
+.sidebar-pane-header {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--sidebar-border);
+  color: var(--sidebar-text);
+  cursor: pointer;
+  display: flex;
+  flex: none;
+  font: 700 11px/1 var(--font-sans);
+  gap: 6px;
+  height: 32px;
+  padding: 0 10px;
+  text-align: left;
+  text-transform: uppercase;
+  width: 100%;
+}
+
+.sidebar-pane-header:hover {
+  background: rgb(127 127 127 / 0.1);
+}
+
+.sidebar-pane-draft-count {
+  align-items: center;
+  color: var(--sidebar-ref);
+  display: inline-flex;
+  gap: 3px;
+  margin-left: auto;
+}
+
+.sidebar-pane-resizer {
+  background: var(--sidebar-border);
+  cursor: row-resize;
+  flex: 0 0 5px;
+  position: relative;
+}
+
+.sidebar-pane-resizer::after {
+  content: '';
+  inset: -3px 0;
+  position: absolute;
+}
+
+.sidebar-pane .sidebar-search-row {
+  padding-block: 7px;
+}
+
 .sidebar-settings-bar {
   align-items: center;
   border-top: 1px solid var(--sidebar-border);

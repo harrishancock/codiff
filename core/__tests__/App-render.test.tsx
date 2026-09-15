@@ -621,7 +621,21 @@ test('stale persisted collapsed sidebar state does not hide the sidebar on launc
   expect(app.container.querySelector('.sidebar [role="tablist"]')).toBeNull();
   const modeControl = topBar?.querySelector('.review-mode-control');
   const modes = modeControl?.querySelectorAll<HTMLButtonElement>('[role="tab"]') ?? [];
-  expect([...modes].map((mode) => mode.textContent)).toEqual(['Walkthrough', 'Tree', 'History']);
+  expect([...modes].map((mode) => mode.textContent)).toEqual(['Walkthrough', 'Review']);
+  expect(
+    [...app.container.querySelectorAll('.sidebar-pane-header')].map(
+      ({ textContent }) => textContent,
+    ),
+  ).toEqual(['Tree', 'History']);
+  expect(app.container.querySelector('.file-tree')).not.toBeNull();
+  expect(app.container.querySelector('.history-list')).not.toBeNull();
+  const treeHeader = app.container.querySelector<HTMLButtonElement>('.sidebar-pane.tree > button');
+  await act(async () => treeHeader?.click());
+  expect(app.container.querySelector('.file-tree')).toBeNull();
+  expect(JSON.parse(localStorage.getItem('codiff:sidebar-panes:v1') ?? '{}')).toMatchObject({
+    historyOpen: true,
+    treeOpen: false,
+  });
   const sidebarToggle = topBar?.querySelector<HTMLButtonElement>('.sidebar-toggle-button');
   await act(async () => sidebarToggle?.click());
   expect(app.container.querySelector('.app-shell')?.classList.contains('sidebar-collapsed')).toBe(
@@ -3203,9 +3217,6 @@ test('refreshing all changes re-resolves the branch snapshot', async () => {
     ref: 'main',
     type: 'branch-working-tree',
   });
-  await act(async () => {
-    findButton('History')?.click();
-  });
   await waitFor(() => {
     expect(findButton('Committed only vs main')).toBeTruthy();
   });
@@ -3874,10 +3885,6 @@ test('history filter matches commits by author name', async () => {
   document.body.append(container);
   let root: Root | null = null;
 
-  const findButton = (label: string) =>
-    Array.from(container.querySelectorAll('button')).find((button) =>
-      button.textContent?.includes(label),
-    );
   const historySubjects = () =>
     Array.from(container.querySelectorAll('.history-entry-subject')).map(
       (element) => element.textContent,
@@ -3898,14 +3905,13 @@ test('history filter matches commits by author name', async () => {
   await waitFor(() => {
     expect(container.querySelector('.loading')).toBeNull();
   });
-  await act(async () => {
-    findButton('History')?.click();
-  });
   await waitFor(() => {
     expect(historySubjects()).toContain('Fix parser');
     expect(historySubjects()).toContain('Update docs');
   });
-  const searchInput = container.querySelector<HTMLInputElement>('.sidebar-search');
+  const searchInput = container.querySelector<HTMLInputElement>(
+    '.sidebar-search[aria-label="Filter history"]',
+  );
   expect(searchInput).toBeTruthy();
   const setInputValue = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
   await act(async () => {
@@ -3993,7 +3999,7 @@ test('commit viewed progress synchronizes tree, walkthrough, and uncovered suppo
   await waitFor(() => expect(buttons()).toHaveLength(2));
   expect(app.container.textContent).toContain('Not included in the generated walkthrough.');
   await act(async () => buttons()[0].click());
-  await switchMode('Tree');
+  await switchMode('Review');
   await waitFor(() => expect(buttons()).toHaveLength(1));
   expect(buttons()[0].getAttribute('aria-pressed')).toBe('false');
   expect(collapsedCount()).toBe(0);
@@ -4001,7 +4007,7 @@ test('commit viewed progress synchronizes tree, walkthrough, and uncovered suppo
   await waitFor(() => expect(buttons()).toHaveLength(2));
   expect(buttons().map((button) => button.getAttribute('aria-pressed'))).toEqual(['true', 'false']);
   await act(async () => buttons()[1].click());
-  await switchMode('Tree');
+  await switchMode('Review');
   await waitFor(() => expect(buttons()).toHaveLength(1));
   expect(buttons()[0].getAttribute('aria-pressed')).toBe('true');
   expect(collapsedCount()).toBe(1);
@@ -4017,7 +4023,7 @@ test('commit viewed progress synchronizes tree, walkthrough, and uncovered suppo
     'false',
   ]);
   expect(collapsedCount()).toBe(0);
-  await switchMode('Tree');
+  await switchMode('Review');
   await act(async () => buttons()[0].click());
   await switchMode('Walkthrough');
   await waitFor(() => expect(buttons()).toHaveLength(2));

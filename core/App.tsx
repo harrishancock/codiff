@@ -1,5 +1,4 @@
 import { ArrowSquareOutIcon as ArrowSquareOut } from '@phosphor-icons/react/ArrowSquareOut';
-import { ClockCounterClockwiseIcon as ClockCounterClockwise } from '@phosphor-icons/react/ClockCounterClockwise';
 import { PathIcon as Path } from '@phosphor-icons/react/Path';
 import { TreeStructureIcon as TreeStructure } from '@phosphor-icons/react/TreeStructure';
 import type { FileDiffLoadedFiles } from '@pierre/diffs';
@@ -2134,13 +2133,8 @@ export default function App() {
     },
     {
       icon: <TreeStructure aria-hidden size={14} weight="bold" />,
-      label: 'Tree',
+      label: 'Review',
       value: 'tree',
-    },
-    {
-      icon: <ClockCounterClockwise aria-hidden size={14} weight="bold" />,
-      label: 'History',
-      value: 'history',
     },
   ] satisfies ReadonlyArray<ReviewModeItem<typeof sidebarMode>>;
 
@@ -2203,7 +2197,7 @@ export default function App() {
             ) : null}
           </>
         }
-        mode={sidebarMode}
+        mode={sidebarMode === 'history' ? 'tree' : sidebarMode}
         modes={reviewModes}
         onModeChange={changeSidebarMode}
         onToggleSidebar={toggleSidebar}
@@ -2286,18 +2280,19 @@ export default function App() {
           commitViewOpen={showPlainCommitView}
           currentSource={pendingSource ?? state.source}
           files={visibleFiles}
+          fileSearchQuery={fileSearchQuery}
           historyEntries={historyEntries}
           historyHasMore={historyHasMore}
           historyLoading={historyLoading}
+          historySearchQuery={historySearchQuery}
           keymap={codiffConfig.keymap}
           mode={sidebarMode}
           narrativeNavigation={narrativeNavigation}
           narrativeWalkthrough={narrativeWalkthrough}
           onActivatePath={activatePath}
+          onFileSearchQueryChange={setFileSearchQuery}
+          onHistorySearchQueryChange={setHistorySearchQuery}
           onLoadMoreHistory={loadMoreHistory}
-          onSearchQueryChange={
-            sidebarMode === 'history' ? setHistorySearchQuery : setFileSearchQuery
-          }
           onSelectReviewScope={setRecoveryScopeKey}
           onSelectSource={(source) => {
             setRecoveryScopeKey(null);
@@ -2310,7 +2305,6 @@ export default function App() {
           reloadDeltaPaths={reloadDeltaPaths}
           reviewDraftScopes={reviewDraftScopes}
           reviewDraftSourceByKey={reviewDraftSourceByKey}
-          searchQuery={sidebarMode === 'history' ? historySearchQuery : fileSearchQuery}
           selectedPath={visibleSelectedPath}
           shareWalkthroughDisabled={walkthroughSharing}
           showWhitespace={showWhitespace}

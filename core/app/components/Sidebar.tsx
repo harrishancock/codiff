@@ -1,5 +1,7 @@
+import { CaretDownIcon as CaretDown } from '@phosphor-icons/react/CaretDown';
+import { CaretRightIcon as CaretRight } from '@phosphor-icons/react/CaretRight';
 import { ChatCircleDotsIcon as ChatCircleDots } from '@phosphor-icons/react/ChatCircleDots';
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { matchesShortcut } from '../../config/keymap.ts';
 import type { CodiffKeymap } from '../../config/types.ts';
 import type {
@@ -31,16 +33,19 @@ export function Sidebar({
   commitViewOpen,
   currentSource,
   files,
+  fileSearchQuery,
   historyEntries,
   historyHasMore,
   historyLoading,
+  historySearchQuery,
   keymap,
   mode,
   narrativeNavigation,
   narrativeWalkthrough,
   onActivatePath,
+  onFileSearchQueryChange,
+  onHistorySearchQueryChange,
   onLoadMoreHistory,
-  onSearchQueryChange,
   onSelectReviewScope,
   onSelectSource,
   onShareWalkthrough,
@@ -50,7 +55,6 @@ export function Sidebar({
   reloadDeltaPaths,
   reviewDraftScopes,
   reviewDraftSourceByKey,
-  searchQuery,
   selectedPath,
   shareWalkthroughDisabled,
   showWhitespace,
@@ -65,16 +69,19 @@ export function Sidebar({
   commitViewOpen: boolean;
   currentSource: ReviewSource;
   files: ReadonlyArray<ChangedFile>;
+  fileSearchQuery: string;
   historyEntries: ReadonlyArray<HistoryEntry>;
   historyHasMore: boolean;
   historyLoading: boolean;
+  historySearchQuery: string;
   keymap: CodiffKeymap;
   mode: SidebarMode;
   narrativeNavigation: NarrativeNavigation;
   narrativeWalkthrough: NarrativeWalkthrough | null;
   onActivatePath: (path: string) => void;
+  onFileSearchQueryChange: (query: string) => void;
+  onHistorySearchQueryChange: (query: string) => void;
   onLoadMoreHistory: () => void;
-  onSearchQueryChange: (query: string) => void;
   onSelectReviewScope: (scopeKey: string) => void;
   onSelectSource: (source: ReviewSource) => void;
   onShareWalkthrough?: () => void;
@@ -84,7 +91,6 @@ export function Sidebar({
   reloadDeltaPaths: ReadonlySet<string>;
   reviewDraftScopes: ReadonlyMap<string, { count: number; label: string }>;
   reviewDraftSourceByKey: ReadonlyMap<string, ReviewSource>;
-  searchQuery: string;
   selectedPath: string | null;
   shareWalkthroughDisabled?: boolean;
   showWhitespace: boolean;
@@ -98,6 +104,24 @@ export function Sidebar({
   };
 }) {
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const panesRef = useRef<HTMLDivElement>(null);
+  const resizingRef = useRef(false);
+  const [paneLayout, setPaneLayout] = useState(() => {
+    try {
+      const stored = JSON.parse(localStorage.getItem('codiff:sidebar-panes:v1') ?? '{}') as {
+        historyOpen?: boolean;
+        split?: number;
+        treeOpen?: boolean;
+      };
+      return {
+        historyOpen: stored.historyOpen ?? true,
+        split: Math.min(80, Math.max(20, stored.split ?? 55)),
+        treeOpen: stored.treeOpen ?? true,
+      };
+    } catch {
+      return { historyOpen: true, split: 55, treeOpen: true };
+    }
+  });
   const lineCountsByPath = useMemo(
     () => new Map(files.map((file) => [file.path, getDiffLineCount(file, showWhitespace)])),
     [files, showWhitespace],
@@ -106,10 +130,14 @@ export function Sidebar({
     () => getTotalDiffLineCount(lineCountsByPath.values()),
     [lineCountsByPath],
   );
-  const showTotalLineCount = mode !== 'history' && totalLineCount.countable;
+  const showTotalLineCount = mode !== 'walkthrough' && totalLineCount.countable;
   const showCommitButton =
-    mode === 'tree' && currentSource.type === 'working-tree' && commitFiles.length > 0;
+    mode !== 'walkthrough' && currentSource.type === 'working-tree' && commitFiles.length > 0;
   const showFooter = showTotalLineCount || showCommitButton;
+  const totalReviewDraftCount = [...reviewDraftScopes.values()].reduce(
+    (total, { count }) => total + count,
+    0,
+  );
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -124,38 +152,147 @@ export function Sidebar({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [keymap]);
 
+  useEffect(() => {
+    localStorage.setItem('codiff:sidebar-panes:v1', JSON.stringify(paneLayout));
+  }, [paneLayout]);
+
+  useEffect(() => {
+    const resize = (event: PointerEvent) => {
+      if (!resizingRef.current || !panesRef.current) {
+        return;
+      }
+      const bounds = panesRef.current.getBoundingClientRect();
+      const split = ((event.clientY - bounds.top) / bounds.height) * 100;
+      setPaneLayout((current) => ({ ...current, split: Math.min(80, Math.max(20, split)) }));
+    };
+    const stop = () => {
+      resizingRef.current = false;
+    };
+    window.addEventListener('pointermove', resize);
+    window.addEventListener('pointerup', stop);
+    return () => {
+      window.removeEventListener('pointermove', resize);
+      window.removeEventListener('pointerup', stop);
+    };
+  }, []);
+
   return (
     <>
-      <div className="sidebar-search-row">
-        <input
-          aria-label="Filter changed files"
-          className="sidebar-search"
-          onChange={(event) => onSearchQueryChange(event.currentTarget.value)}
-          placeholder={mode === 'history' ? 'Filter history' : 'Filter files'}
-          ref={searchInputRef}
-          spellCheck={false}
-          type="search"
-          value={searchQuery}
-        />
-      </div>
-      {mode === 'history' ? (
-        <HistorySidebar
-          activeReviewScopeKey={activeReviewScopeKey}
-          branchSource={branchSource}
-          currentSource={currentSource}
-          entries={historyEntries}
-          hasMore={historyHasMore}
-          loading={historyLoading}
-          onLoadMore={onLoadMoreHistory}
-          onSelectReviewScope={onSelectReviewScope}
-          onSelectSource={onSelectSource}
-          pendingCommentCountBySource={pendingCommentCountBySource}
-          pullRequestSource={pullRequestSource}
-          reviewDraftScopes={reviewDraftScopes}
-          reviewDraftSourceByKey={reviewDraftSourceByKey}
-          searchQuery={searchQuery}
-        />
-      ) : mode === 'walkthrough' && narrativeWalkthrough ? (
+      {mode === 'walkthrough' ? null : (
+        <div className="sidebar-panes" ref={panesRef}>
+          <section
+            className={`sidebar-pane tree${paneLayout.treeOpen ? ' open' : ''}`}
+            style={
+              paneLayout.treeOpen && paneLayout.historyOpen
+                ? { flexBasis: `${paneLayout.split}%` }
+                : undefined
+            }
+          >
+            <button
+              className="sidebar-pane-header"
+              onClick={() =>
+                setPaneLayout((current) => ({ ...current, treeOpen: !current.treeOpen }))
+              }
+              type="button"
+            >
+              {paneLayout.treeOpen ? <CaretDown size={12} /> : <CaretRight size={12} />}
+              Tree
+            </button>
+            {paneLayout.treeOpen ? (
+              <>
+                <div className="sidebar-search-row">
+                  <input
+                    aria-label="Filter changed files"
+                    className="sidebar-search"
+                    onChange={(event) => onFileSearchQueryChange(event.currentTarget.value)}
+                    placeholder="Filter files"
+                    ref={searchInputRef}
+                    spellCheck={false}
+                    type="search"
+                    value={fileSearchQuery}
+                  />
+                </div>
+                <ReviewFileTree
+                  files={files}
+                  onActivatePath={onActivatePath}
+                  reloadDeltaPaths={reloadDeltaPaths}
+                  scrollSelectedPathIntoView
+                  selectedPath={selectedPath}
+                  showWhitespace={showWhitespace}
+                  viewed={viewed}
+                />
+              </>
+            ) : null}
+          </section>
+          {paneLayout.treeOpen && paneLayout.historyOpen ? (
+            <div
+              aria-label="Resize Tree and History panes"
+              className="sidebar-pane-resizer"
+              onPointerDown={() => {
+                resizingRef.current = true;
+              }}
+              role="separator"
+            />
+          ) : null}
+          <section
+            className={`sidebar-pane history${paneLayout.historyOpen ? ' open' : ''}`}
+            style={
+              paneLayout.treeOpen && paneLayout.historyOpen
+                ? { flexBasis: `${100 - paneLayout.split}%` }
+                : undefined
+            }
+          >
+            <button
+              className="sidebar-pane-header"
+              onClick={() =>
+                setPaneLayout((current) => ({ ...current, historyOpen: !current.historyOpen }))
+              }
+              type="button"
+            >
+              {paneLayout.historyOpen ? <CaretDown size={12} /> : <CaretRight size={12} />}
+              History
+              {!paneLayout.historyOpen && totalReviewDraftCount > 0 ? (
+                <span className="sidebar-pane-draft-count">
+                  <ChatCircleDots aria-hidden size={13} weight="fill" />
+                  {totalReviewDraftCount}
+                </span>
+              ) : null}
+            </button>
+            {paneLayout.historyOpen ? (
+              <>
+                <div className="sidebar-search-row">
+                  <input
+                    aria-label="Filter history"
+                    className="sidebar-search"
+                    onChange={(event) => onHistorySearchQueryChange(event.currentTarget.value)}
+                    placeholder="Filter history"
+                    spellCheck={false}
+                    type="search"
+                    value={historySearchQuery}
+                  />
+                </div>
+                <HistorySidebar
+                  activeReviewScopeKey={activeReviewScopeKey}
+                  branchSource={branchSource}
+                  currentSource={currentSource}
+                  entries={historyEntries}
+                  hasMore={historyHasMore}
+                  loading={historyLoading}
+                  onLoadMore={onLoadMoreHistory}
+                  onSelectReviewScope={onSelectReviewScope}
+                  onSelectSource={onSelectSource}
+                  pendingCommentCountBySource={pendingCommentCountBySource}
+                  pullRequestSource={pullRequestSource}
+                  reviewDraftScopes={reviewDraftScopes}
+                  reviewDraftSourceByKey={reviewDraftSourceByKey}
+                  searchQuery={historySearchQuery}
+                />
+              </>
+            ) : null}
+          </section>
+        </div>
+      )}
+      {mode === 'walkthrough' && narrativeWalkthrough ? (
         <NarrativeSidebar
           files={commitFiles}
           navigation={narrativeNavigation}
@@ -183,17 +320,7 @@ export function Sidebar({
             </div>
           ) : null}
         </>
-      ) : (
-        <ReviewFileTree
-          files={files}
-          onActivatePath={onActivatePath}
-          reloadDeltaPaths={reloadDeltaPaths}
-          scrollSelectedPathIntoView
-          selectedPath={selectedPath}
-          showWhitespace={showWhitespace}
-          viewed={viewed}
-        />
-      )}
+      ) : null}
       {showFooter ? (
         <div className="sidebar-total-row">
           <span className="sidebar-total-summary">
