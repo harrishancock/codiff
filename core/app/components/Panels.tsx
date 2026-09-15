@@ -456,6 +456,7 @@ export function CopyAllCommentsButton({
             disabled={counts.allInReview === 0}
             onClick={() => void copyComments(getAllInReviewJSON)}
             role="menuitem"
+            title="Copy every preserved draft in the current review scope, including superseded and unavailable comments"
             type="button"
           >
             All in Review ({counts.allInReview})
@@ -464,6 +465,7 @@ export function CopyAllCommentsButton({
             disabled={counts.allRepository === 0}
             onClick={() => void copyComments(getAllRepositoryJSON)}
             role="menuitem"
+            title="Copy every preserved draft for this repository across all known review scopes"
             type="button"
           >
             All Repository Drafts ({counts.allRepository})

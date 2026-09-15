@@ -57,6 +57,7 @@ declare global {
         requests: ReadonlyArray<ReviewDraftClassificationRequest>,
       ) => Promise<ReadonlyArray<ReviewDraftClassification>>;
       clearReviewDrafts?: () => Promise<number>;
+      clearReviewDraftScope?: (scopeKey: string) => Promise<number>;
       completePlan: (review: PlanReview, status: PlanHandoffStatus) => Promise<void>;
       createWalkthroughCommit: (
         request: WalkthroughCommitRequest,

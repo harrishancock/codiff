@@ -68,3 +68,24 @@ test('copies every draft in the selected recovery scope', async () => {
     expect.stringContaining('"scopeKey": "legacy"'),
   );
 });
+
+test('clears the selected scope only after exact-count confirmation', async () => {
+  const clearScope = vi.fn(() => Promise.resolve());
+  vi.spyOn(window, 'confirm').mockReturnValue(true);
+  await using view = await renderReact(
+    <ReviewDraftRecoveryView
+      drafts={[draft]}
+      onClearScope={clearScope}
+      scopeLabel="Legacy / Recovered"
+    />,
+  );
+
+  const clear = [...view.container.querySelectorAll('button')].find(
+    ({ textContent }) => textContent === 'Clear Scope Drafts…',
+  );
+  await act(() => clear?.click());
+  expect(window.confirm).toHaveBeenCalledWith(
+    'Clear 1 staged review comment from Legacy / Recovered?',
+  );
+  expect(clearScope).toHaveBeenCalledOnce();
+});

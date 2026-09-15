@@ -1516,6 +1516,10 @@ ipcMain.handle('codiff:clearReviewDrafts', (event) =>
   getReviewDraftStore().clearRepository(getWindowRepositoryRoot(event.sender.id)),
 );
 
+ipcMain.handle('codiff:clearReviewDraftScope', (event, scopeKey) =>
+  getReviewDraftStore().clearScope(getWindowRepositoryRoot(event.sender.id), String(scopeKey)),
+);
+
 ipcMain.handle('codiff:resolvePullRequestUrl', (event, value) => {
   const input = typeof value === 'string' ? value.trim() : '';
   const parsedUrl = parseReviewUrl(input);

@@ -493,6 +493,12 @@ function HistorySidebar({
           ))}
         </>
       ) : null}
+      {otherReviewScopes.length > 0 &&
+      !visibleRows.some(
+        (row) => row.kind === 'section' && row.key === 'history-section:current-review',
+      ) ? (
+        <div className="history-section">Current review</div>
+      ) : null}
       {visibleRows.map((row) => {
         if (row.kind === 'section') {
           return (

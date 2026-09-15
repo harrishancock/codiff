@@ -680,6 +680,55 @@ export default function App() {
     [reviewDraftModel],
   );
 
+  const clearRecoveryScope = useCallback(async (scopeKey: string) => {
+    const clearReviewDraftScope = window.codiff.clearReviewDraftScope;
+    if (!clearReviewDraftScope) {
+      window.alert('This Codiff build cannot clear an individual review scope.');
+      return;
+    }
+    try {
+      await clearReviewDraftScope(scopeKey);
+      const remaining = persistedReviewDraftSourcesRef.current.filter(
+        (source) => source.scopeKey !== scopeKey,
+      );
+      const remainingSourceKeys = new Set(remaining.map(({ sourceKey }) => sourceKey));
+      for (const source of persistedReviewDraftSourcesRef.current) {
+        if (source.scopeKey === scopeKey && !remainingSourceKeys.has(source.sourceKey)) {
+          sourceSessionsRef.current.delete(source.sourceKey);
+          reviewDraftRevisionBySourceRef.current.delete(source.sourceKey);
+        }
+      }
+      persistedReviewDraftSourcesRef.current = remaining;
+      reviewDraftClassificationsRef.current = reviewDraftClassificationsRef.current.filter(
+        ({ id }) => !id.startsWith(`${scopeKey}\0`),
+      );
+      setReviewDraftModel(
+        buildClassifiedReviewDraftModel(remaining, reviewDraftClassificationsRef.current),
+      );
+      const countsBySource = new Map<string, number>();
+      const sourcesByKey = new Map<string, ReviewSource>();
+      const scopes = new Map<string, { count: number; label: string }>();
+      for (const source of remaining) {
+        const count = getPendingReviewCommentCount(source.comments);
+        countsBySource.set(source.sourceKey, (countsBySource.get(source.sourceKey) ?? 0) + count);
+        sourcesByKey.set(source.sourceKey, source.source);
+        const existingScope = scopes.get(source.scopeKey);
+        scopes.set(source.scopeKey, {
+          count: (existingScope?.count ?? 0) + count,
+          label: source.scope.label,
+        });
+      }
+      setPendingCommentCountBySource(countsBySource);
+      setReviewDraftSourceByKey(sourcesByKey);
+      setReviewDraftScopes(scopes);
+      setRecoveryScopeKey(null);
+    } catch (error) {
+      window.alert(
+        `Codiff could not clear recovered comments: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+  }, []);
+
   useEffect(() => {
     const currentState = stateRef.current;
     if (
@@ -2274,6 +2323,7 @@ export default function App() {
         {recoveryScopeKey ? (
           <ReviewDraftRecoveryView
             drafts={reviewDraftModel.filter(({ scopeKey }) => scopeKey === recoveryScopeKey)}
+            onClearScope={() => clearRecoveryScope(recoveryScopeKey)}
             scopeLabel={reviewDraftScopes.get(recoveryScopeKey)?.label ?? 'Recovered drafts'}
           />
         ) : isSwitchingSource ? (

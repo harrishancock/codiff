@@ -9,6 +9,7 @@ const require = createRequire(import.meta.url);
 const { createReviewDraftStore } = require('../review-draft-store.cjs') as {
   createReviewDraftStore: (path: string) => {
     clearRepository: (repositoryRoot: string) => number;
+    clearScope: (repositoryRoot: string, scopeKey: string) => number;
     close: () => void;
     loadRepository: (repositoryRoot: string) => ReadonlyArray<{
       comments: ReadonlyArray<Record<string, unknown>>;
@@ -150,6 +151,11 @@ test('keeps the same source independent in different review scopes', () => {
 
   expect(store.loadRepository('/repo').map(({ scopeKey }) => scopeKey)).toEqual([
     'branch:feature-a',
+    'branch:feature-b',
+  ]);
+
+  expect(store.clearScope('/repo', 'branch:feature-a')).toBe(1);
+  expect(store.loadRepository('/repo').map(({ scopeKey }) => scopeKey)).toEqual([
     'branch:feature-b',
   ]);
   store.close();

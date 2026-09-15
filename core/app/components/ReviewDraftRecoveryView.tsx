@@ -22,9 +22,11 @@ const dispositionLabels: Record<ClassifiedReviewDraft['disposition'], string> = 
 
 export function ReviewDraftRecoveryView({
   drafts,
+  onClearScope,
   scopeLabel,
 }: {
   drafts: ReadonlyArray<ClassifiedReviewDraft>;
+  onClearScope?: () => Promise<void>;
   scopeLabel: string;
 }) {
   const copyJSON = useCallback(async (json: string) => {
@@ -48,6 +50,24 @@ export function ReviewDraftRecoveryView({
           <Copy aria-hidden size={14} weight="bold" />
           Copy Scope Drafts ({drafts.length})
         </button>
+        {onClearScope ? (
+          <button
+            className="danger"
+            disabled={drafts.length === 0}
+            onClick={() => {
+              if (
+                window.confirm(
+                  `Clear ${drafts.length} staged review ${drafts.length === 1 ? 'comment' : 'comments'} from ${scopeLabel}?`,
+                )
+              ) {
+                void onClearScope();
+              }
+            }}
+            type="button"
+          >
+            Clear Scope Drafts…
+          </button>
+        ) : null}
       </header>
       <div className="review-draft-recovery-list">
         {drafts.map((draft) => (

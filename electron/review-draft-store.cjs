@@ -100,8 +100,14 @@ const createReviewDraftStore = (databasePath) => {
   const countDrafts = database.prepare(
     'SELECT COUNT(*) AS count FROM review_drafts WHERE repository_root = ?',
   );
+  const countScopeDrafts = database.prepare(
+    'SELECT COUNT(*) AS count FROM review_drafts WHERE repository_root = ? AND scope_key = ?',
+  );
   const clearRepositoryStatement = database.prepare(
     'DELETE FROM review_draft_sources WHERE repository_root = ?',
+  );
+  const clearScopeStatement = database.prepare(
+    'DELETE FROM review_draft_sources WHERE repository_root = ? AND scope_key = ?',
   );
 
   return {
@@ -110,6 +116,19 @@ const createReviewDraftStore = (databasePath) => {
       const row = /** @type {{count: number}} */ (countDrafts.get(repositoryRoot));
       clearRepositoryStatement.run(repositoryRoot);
       return Number(row.count);
+    },
+    /** @param {string} repositoryRoot @param {string} scopeKey */
+    clearScope(repositoryRoot, scopeKey) {
+      database.exec('BEGIN IMMEDIATE;');
+      try {
+        const row = /** @type {{count: number}} */ (countScopeDrafts.get(repositoryRoot, scopeKey));
+        clearScopeStatement.run(repositoryRoot, scopeKey);
+        database.exec('COMMIT;');
+        return Number(row.count);
+      } catch (error) {
+        database.exec('ROLLBACK;');
+        throw error;
+      }
     },
     close() {
       database.close();

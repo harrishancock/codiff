@@ -47,6 +47,8 @@ test('offers broader review and repository copy actions', async () => {
     'All in Review (5)',
     'All Repository Drafts (8)',
   ]);
+  expect(actions[0]?.title).toContain('current review scope');
+  expect(actions[1]?.title).toContain('all known review scopes');
 
   await act(() => actions[1]?.click());
   expect(navigator.clipboard.writeText).toHaveBeenCalledWith('all-repository');
