@@ -711,6 +711,7 @@ function SourceDescriptionBody({
   onLayoutReady,
   onUpdateDescription,
   onUploadDescriptionAsset,
+  trailers = [],
 }: {
   ariaLabel?: string;
   author?: SourceDescriptionAuthor;
@@ -721,6 +722,7 @@ function SourceDescriptionBody({
   onLayoutReady: (layoutKey: string) => void;
   onUpdateDescription?: (body: string) => Promise<void> | void;
   onUploadDescriptionAsset?: (file: File) => Promise<string> | string;
+  trailers?: CommitMetadata['trailers'];
 }) {
   useLayoutEffect(() => {
     onLayoutReady(layoutKey);
@@ -850,7 +852,7 @@ function SourceDescriptionBody({
           <div
             className={`review-comment-header read-only source-description-author-header${
               canEditDescription || editing ? ' with-comment-action' : ''
-            }${!sanitizedDescription && !editing ? ' without-description' : ''}`}
+            }${!sanitizedDescription && trailers.length === 0 && !editing ? ' without-description' : ''}`}
           >
             <strong title={author?.title}>{author ? author.displayName : 'Description'}</strong>
             {editing ? (
@@ -948,6 +950,16 @@ function SourceDescriptionBody({
               value={sanitizedDescription}
               variant="embedded"
             />
+          </div>
+        ) : null}
+        {!editing && trailers.length > 0 ? (
+          <div aria-label="Commit trailers" className="commit-message-trailers">
+            {trailers.map((trailer, index) => (
+              <div className="commit-message-trailer" key={`${trailer.key}:${index}`}>
+                <span className="commit-message-trailer-key">{trailer.key}</span>
+                <span className="commit-message-trailer-value">{trailer.value}</span>
+              </div>
+            ))}
           </div>
         ) : null}
       </div>
@@ -2702,6 +2714,7 @@ export function ReviewCodeView({
       ? (source.description?.trim() ?? '')
       : '';
   const sourceDescriptionHasBody = sourceDescription.length > 0;
+  const commitMessageTrailers = commitMessageMetadata?.trailers;
   const sourceDescriptionHasContent = sourceDescriptionHasBody || shouldShowCommitMessage;
   const canEditSourceDescription =
     shouldShowSourceDescription &&
@@ -4202,7 +4215,7 @@ export function ReviewCodeView({
       <div className="codiff-source-description-panel codiff-code-view-source-description">
         <SourceDescriptionHeader
           actions={sourceDescriptionActions}
-          canCollapse={sourceDescription.length > 0 || canEditSourceDescription}
+          canCollapse={sourceDescriptionHasContent || canEditSourceDescription}
           canEditTitle={canEditSourceTitle}
           isCollapsed={sourceDescriptionCollapsed}
           label={sourceDescriptionLabel}
@@ -4223,6 +4236,7 @@ export function ReviewCodeView({
               onLayoutReady={noopLayoutReady}
               onUpdateDescription={onUpdateSourceDescription}
               onUploadDescriptionAsset={onUploadSourceDescriptionAsset}
+              trailers={commitMessageTrailers}
             />
             {sourceDescriptionFooter ? (
               <div className="codiff-source-description-footer">{sourceDescriptionFooter}</div>
@@ -4234,6 +4248,7 @@ export function ReviewCodeView({
     [
       canEditSourceDescription,
       canEditSourceTitle,
+      commitMessageTrailers,
       keymap,
       onUpdateSourceDescription,
       onUpdateSourceTitle,

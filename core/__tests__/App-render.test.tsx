@@ -1519,6 +1519,10 @@ test('commit messages use the shared source description presentation', async () 
   const changedFile = createChangedFile('src/app.ts');
   const source = { ref: 'abc1234', type: 'commit' } satisfies ReviewSource;
   const commitMetadata = createCommitMetadataFixture('## Details\n\nDetailed **commit** body.');
+  commitMetadata.trailers = [
+    { key: 'Reviewed-by', value: 'First Reviewer <first@example.com>' },
+    { key: 'Reviewed-by', value: 'Second Reviewer\n  <second@example.com>' },
+  ];
   const historyAvatarUrl = 'https://avatars.githubusercontent.com/u/1?v=4';
 
   window.codiff = createCodiffMock({
@@ -1582,11 +1586,16 @@ test('commit messages use the shared source description presentation', async () 
   expect(container.querySelector('.codiff-commit-details-header')).toBeNull();
   expect(container.querySelector('.commit-details-panel')).toBeNull();
   expect(container.textContent).not.toContain('Verified signature');
-  expect(container.textContent).not.toContain('Co-authored-by');
+  const trailers = [...container.querySelectorAll('.commit-message-trailer')];
+  expect(trailers.map((trailer) => trailer.textContent)).toEqual([
+    'Reviewed-byFirst Reviewer <first@example.com>',
+    'Reviewed-bySecond Reviewer\n  <second@example.com>',
+  ]);
 });
 
 test('bodyless commits still render the author and profile image', async () => {
   const commitMetadata = createCommitMetadataFixture('');
+  commitMetadata.trailers = [];
   const source = {
     ref: commitMetadata.ref,
     type: 'commit',

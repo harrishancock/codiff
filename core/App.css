@@ -2301,6 +2301,32 @@ html[data-codiff-platform='darwin'] .sidebar {
   padding-bottom: 0;
 }
 
+.commit-message-trailers {
+  border-top: 1px solid var(--file-border);
+  color: var(--muted);
+  padding: 10px 12px;
+}
+
+.commit-message-trailer {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: max-content minmax(0, 1fr);
+  line-height: 1.55;
+}
+
+.commit-message-trailer-key {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.commit-message-trailer-key::after {
+  content: ':';
+}
+
+.commit-message-trailer-value {
+  white-space: pre-wrap;
+}
+
 .source-description-markdown-editor {
   --mdx-editor-font-size: 14px;
   --mdx-editor-line-height: 1.55;
