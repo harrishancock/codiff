@@ -6,7 +6,7 @@ export type MovedLine = {
   side: 'additions' | 'deletions';
 };
 
-export type MovedCodePalette = 'off' | 'slate';
+export type MovedCodePalette = 'balanced' | 'off';
 
 type ChangedLine = MovedLine & {
   content: string;

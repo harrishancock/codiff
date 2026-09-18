@@ -370,7 +370,7 @@ export default function App() {
     direction: 1 | -1;
     request: number;
   } | null>(null);
-  const [movedCodePalette, setMovedCodePalette] = useState<MovedCodePalette>('slate');
+  const [movedCodePalette, setMovedCodePalette] = useState<MovedCodePalette>('balanced');
   const showWhitespace = preferences.showWhitespace;
   const orderedFiles = useMemo(() => (state ? sortFiles(state.files) : []), [state]);
   const {

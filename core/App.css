@@ -2187,6 +2187,22 @@ html[data-codiff-platform='darwin'] .sidebar {
   justify-content: flex-end;
 }
 
+.commit-line-stats {
+  align-items: center;
+  display: inline-flex;
+  flex: none;
+  font: 600 13px/1.35 var(--font-mono);
+  gap: 8px;
+}
+
+.commit-line-stats-additions {
+  color: var(--diff-addition);
+}
+
+.commit-line-stats-deletions {
+  color: var(--diff-deletion);
+}
+
 .pull-request-merge-status-badge {
   align-items: center;
   background: transparent;

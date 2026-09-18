@@ -1577,6 +1577,8 @@ test('commit messages use the shared source description presentation', async () 
   expect(commitTitle?.textContent).toBe(commitMetadata.subject);
   expect(commitTitle?.classList.contains('selectable')).toBe(true);
   expect(commitTitle?.closest('button')).toBeNull();
+  const commitStats = header?.querySelector('[aria-label="1 line added, 1 line removed"]');
+  expect(commitStats?.textContent).toBe('+1−1');
   expect(container.querySelector('.source-description-author-header')?.textContent).toContain(
     commitMetadata.author.name,
   );

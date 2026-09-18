@@ -107,7 +107,7 @@ test('confirms contextual clearing with the current review count', async () => {
 test('toggles balanced moved-code highlighting off', async () => {
   const onChange = vi.fn();
   await using app = await renderReact(
-    <MovedCodePaletteControl onChange={onChange} value="slate" />,
+    <MovedCodePaletteControl onChange={onChange} value="balanced" />,
   );
 
   const button = app.container.querySelector<HTMLButtonElement>('button');

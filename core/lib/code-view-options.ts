@@ -71,7 +71,7 @@ export const codeViewUnsafeCSS = `
     --diffs-bg-selection-number-override: rgb(61 135 245 / 0.46);
   }
 
-  :host([data-codiff-moved-palette="slate"]) {
+  :host([data-codiff-moved-palette="balanced"]) {
     --codiff-moved-addition: light-dark(#5f8069, #81a98d);
     --codiff-moved-deletion: light-dark(#9b6464, #bd8585);
   }

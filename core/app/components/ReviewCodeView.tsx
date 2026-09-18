@@ -2543,7 +2543,7 @@ export function ReviewCodeView({
   itemVersionByKey,
   keymap,
   loadingSectionIds,
-  movedCodePalette = 'slate',
+  movedCodePalette = 'balanced',
   onActiveBlockChange,
   onAskCodex,
   onCommentDraftChange,
@@ -2724,6 +2724,8 @@ export function ReviewCodeView({
       : '';
   const sourceDescriptionHasBody = sourceDescription.length > 0;
   const commitMessageTrailers = commitMessageMetadata?.trailers;
+  const commitAdditions = commitMessageMetadata?.stats.additions ?? 0;
+  const commitDeletions = commitMessageMetadata?.stats.deletions ?? 0;
   const sourceDescriptionHasContent = sourceDescriptionHasBody || shouldShowCommitMessage;
   const canEditSourceDescription =
     shouldShowSourceDescription &&
@@ -4223,7 +4225,19 @@ export function ReviewCodeView({
     () => (
       <div className="codiff-source-description-panel codiff-code-view-source-description">
         <SourceDescriptionHeader
-          actions={sourceDescriptionActions}
+          actions={
+            shouldShowCommitMessage ? (
+              <div
+                aria-label={`${commitAdditions} ${commitAdditions === 1 ? 'line' : 'lines'} added, ${commitDeletions} ${commitDeletions === 1 ? 'line' : 'lines'} removed`}
+                className="commit-line-stats"
+              >
+                <span className="commit-line-stats-additions">+{commitAdditions}</span>
+                <span className="commit-line-stats-deletions">−{commitDeletions}</span>
+              </div>
+            ) : (
+              sourceDescriptionActions
+            )
+          }
           canCollapse={sourceDescriptionHasContent || canEditSourceDescription}
           canEditTitle={canEditSourceTitle}
           isCollapsed={sourceDescriptionCollapsed}
@@ -4258,6 +4272,8 @@ export function ReviewCodeView({
     [
       canEditSourceDescription,
       canEditSourceTitle,
+      commitAdditions,
+      commitDeletions,
       commitMessageTrailers,
       keymap,
       onUpdateSourceDescription,
