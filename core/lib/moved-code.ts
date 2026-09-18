@@ -177,6 +177,9 @@ export const applyMovedLineAttributes = (root: ParentNode, lines: ReadonlyArray<
   for (const run of runs) {
     for (let offset = 0; offset < run.length; offset += 10) {
       const band = run.slice(offset, offset + 10);
+      if (band.length < minimumMovedLineCount) {
+        continue;
+      }
       const middle = band[Math.floor(band.length / 2)];
       const lineType = middle.side === 'deletions' ? 'change-deletion' : 'change-addition';
       root

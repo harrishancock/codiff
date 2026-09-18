@@ -113,7 +113,7 @@ test('tags moved rows and marks each contiguous run with one watermark', () => {
   );
 });
 
-test('repeats watermarks in ten-row bands across long moved runs', () => {
+test('repeats watermarks without marking a trailing two-row band', () => {
   const root = document.createElement('div');
   root.innerHTML = Array.from(
     { length: 22 },
@@ -131,5 +131,5 @@ test('repeats watermarks in ten-row bands across long moved runs', () => {
     [...root.querySelectorAll('[data-codiff-moved-watermark]')].map((element) =>
       element.getAttribute('data-line'),
     ),
-  ).toEqual(['6', '16', '22']);
+  ).toEqual(['6', '16']);
 });
