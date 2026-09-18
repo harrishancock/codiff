@@ -91,6 +91,7 @@ import {
   getReviewCommentsFromState,
   getVisibleReviewComments,
   mergeReviewComments,
+  withPendingReviewCommentCount,
 } from './lib/review-comments.ts';
 import {
   buildClassifiedReviewDraftModel,
@@ -648,11 +649,9 @@ export default function App() {
         status,
       })),
     });
-    setPendingCommentCountBySource((current) => {
-      const next = new Map(current);
-      next.set(sourceKey, getPendingReviewCommentCount(reviewCommentsRef.current));
-      return next;
-    });
+    setPendingCommentCountBySource((current) =>
+      withPendingReviewCommentCount(current, sourceKey, reviewCommentsRef.current),
+    );
   }, [narrativeWalkthroughRef, reviewCommentsRef, walkthroughErrorRef]);
 
   const getCurrentReviewCommentsJSON = useCallback(() => {
@@ -736,6 +735,16 @@ export default function App() {
     },
     [setReviewComments],
   );
+
+  useEffect(() => {
+    const currentState = stateRef.current;
+    if (!currentState) {
+      return;
+    }
+    setPendingCommentCountBySource((current) =>
+      withPendingReviewCommentCount(current, getSourceKey(currentState.source), reviewComments),
+    );
+  }, [reviewComments, state]);
 
   useEffect(() => {
     const currentState = stateRef.current;

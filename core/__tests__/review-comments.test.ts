@@ -10,6 +10,7 @@ import {
   mergeReviewComments,
   toPullRequestReviewComment,
   toSubmittedReviewComment,
+  withPendingReviewCommentCount,
 } from '../lib/review-comments.ts';
 import type { RepositoryState } from '../types.ts';
 
@@ -127,6 +128,21 @@ test('getPendingReviewCommentCount excludes empty and read-only comments', () =>
       createReviewComment({ id: 'read-only', isReadOnly: true }),
     ]),
   ).toBe(1);
+});
+
+test('withPendingReviewCommentCount updates the active source without mutating prior counts', () => {
+  const current = new Map([['commit:old', 2]]);
+  const next = withPendingReviewCommentCount(current, 'commit:head', [
+    createReviewComment({ id: 'active-draft' }),
+  ]);
+
+  expect(next).toEqual(
+    new Map([
+      ['commit:old', 2],
+      ['commit:head', 1],
+    ]),
+  );
+  expect(current.has('commit:head')).toBe(false);
 });
 
 test('getReviewCommentsFromState hydrates shared comments on their exact working-tree section', () => {

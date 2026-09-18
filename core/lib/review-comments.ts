@@ -455,6 +455,16 @@ export const buildAllReviewCommentsJSON = (
 export const getPendingReviewCommentCount = (comments: ReadonlyArray<ReviewComment>) =>
   comments.filter((comment) => !comment.isReadOnly && comment.body.trim()).length;
 
+export const withPendingReviewCommentCount = (
+  current: ReadonlyMap<string, number>,
+  sourceKey: string,
+  comments: ReadonlyArray<ReviewComment>,
+) => {
+  const next = new Map(current);
+  next.set(sourceKey, getPendingReviewCommentCount(comments));
+  return next;
+};
+
 export const getReviewCommentsFromState = (state: RepositoryState): ReadonlyArray<ReviewComment> =>
   (state.reviewComments ?? []).flatMap((comment) => {
     const file = state.files.find((candidate) => candidate.path === comment.filePath);
