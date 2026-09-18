@@ -531,11 +531,13 @@ function SourceDescriptionTitle({
   canEdit,
   label,
   onUpdateTitle,
+  selectable,
   title,
 }: {
   canEdit: boolean;
   label: string;
   onUpdateTitle?: (title: string) => Promise<void> | void;
+  selectable?: boolean;
   title: string;
 }) {
   const [draft, setDraft] = useState(title);
@@ -566,7 +568,11 @@ function SourceDescriptionTitle({
 
   if (!canEdit || !onUpdateTitle) {
     return (
-      <span className={`codiff-file-path${title ? ' source-description-title' : ''}`}>
+      <span
+        className={`codiff-file-path${title ? ' source-description-title' : ''}${
+          selectable ? ' selectable' : ''
+        }`}
+      >
         {title || label}
       </span>
     );
@@ -620,6 +626,7 @@ function SourceDescriptionHeader({
   label,
   onToggleCollapsed,
   onUpdateTitle,
+  selectableTitle,
   title,
 }: {
   actions?: ReactNode;
@@ -629,6 +636,7 @@ function SourceDescriptionHeader({
   label: string;
   onToggleCollapsed: () => void;
   onUpdateTitle?: (title: string) => Promise<void> | void;
+  selectableTitle?: boolean;
   title: string;
 }) {
   const editableTitle = canEditTitle === true && onUpdateTitle != null && title.length > 0;
@@ -639,6 +647,7 @@ function SourceDescriptionHeader({
           canEdit={editableTitle}
           label={label}
           onUpdateTitle={onUpdateTitle}
+          selectable={selectableTitle}
           title={title}
         />
       </span>
@@ -649,9 +658,9 @@ function SourceDescriptionHeader({
     <div
       className={`codiff-file-header codiff-source-description-header${
         isCollapsed ? ' collapsed' : ''
-      }${editableTitle ? ' editable-title' : ''}`}
+      }${editableTitle || selectableTitle ? ' separate-title' : ''}`}
     >
-      {canCollapse && editableTitle ? (
+      {canCollapse && (editableTitle || selectableTitle) ? (
         <>
           <button
             aria-expanded={!isCollapsed}
@@ -4221,6 +4230,7 @@ export function ReviewCodeView({
           label={sourceDescriptionLabel}
           onToggleCollapsed={toggleSourceDescriptionCollapsed}
           onUpdateTitle={onUpdateSourceTitle}
+          selectableTitle={shouldShowCommitMessage}
           title={sourceTitle}
         />
         {!sourceDescriptionCollapsed &&
@@ -4262,6 +4272,7 @@ export function ReviewCodeView({
       sourceDescriptionHasContent,
       sourceDescriptionLabel,
       sourceTitle,
+      shouldShowCommitMessage,
       toggleSourceDescriptionCollapsed,
     ],
   );

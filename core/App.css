@@ -2124,7 +2124,7 @@ html[data-codiff-platform='darwin'] .sidebar {
   grid-template-columns: minmax(0, 1fr);
 }
 
-.codiff-source-description-header.editable-title {
+.codiff-source-description-header.separate-title {
   grid-template-columns: 30px minmax(0, 1fr);
 }
 
@@ -2146,6 +2146,11 @@ html[data-codiff-platform='darwin'] .sidebar {
   font-family: var(--font-sans);
   font-size: 17px;
   font-weight: 600;
+}
+
+.codiff-file-path.source-description-title.selectable {
+  cursor: text;
+  user-select: text;
 }
 
 .source-description-title-editor {

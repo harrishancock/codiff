@@ -1573,9 +1573,10 @@ test('commit messages use the shared source description presentation', async () 
     );
   });
   const header = container.querySelector<HTMLElement>('.codiff-source-description-header');
-  expect(header?.querySelector('.source-description-title')?.textContent).toBe(
-    commitMetadata.subject,
-  );
+  const commitTitle = header?.querySelector('.source-description-title');
+  expect(commitTitle?.textContent).toBe(commitMetadata.subject);
+  expect(commitTitle?.classList.contains('selectable')).toBe(true);
+  expect(commitTitle?.closest('button')).toBeNull();
   expect(container.querySelector('.source-description-author-header')?.textContent).toContain(
     commitMetadata.author.name,
   );
