@@ -107,7 +107,7 @@ test('tags moved rows and marks each contiguous run with one watermark', () => {
   expect(root.querySelectorAll('[data-codiff-moved]')).toHaveLength(4);
   const watermark = root.querySelector('[data-codiff-moved-watermark]');
   expect(watermark?.getAttribute('data-line')).toBe('6');
-  expect(watermark?.getAttribute('data-codiff-moved-watermark')).toBe('deletions');
+  expect(watermark?.getAttribute('data-codiff-moved-watermark')).toBe('from');
   expect(root.querySelector('[data-line="9"]')?.hasAttribute('data-codiff-moved-watermark')).toBe(
     false,
   );
@@ -132,4 +132,9 @@ test('repeats watermarks without marking a trailing two-row band', () => {
       element.getAttribute('data-line'),
     ),
   ).toEqual(['6', '16']);
+  expect(
+    [...root.querySelectorAll('[data-codiff-moved-watermark]')].map((element) =>
+      element.getAttribute('data-codiff-moved-watermark'),
+    ),
+  ).toEqual(['to', 'to']);
 });

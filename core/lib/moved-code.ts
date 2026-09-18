@@ -184,7 +184,7 @@ export const applyMovedLineAttributes = (root: ParentNode, lines: ReadonlyArray<
       const lineType = middle.side === 'deletions' ? 'change-deletion' : 'change-addition';
       root
         .querySelector(`[data-line-type="${lineType}"][data-line="${middle.lineNumber}"]`)
-        ?.setAttribute('data-codiff-moved-watermark', middle.side);
+        ?.setAttribute('data-codiff-moved-watermark', middle.side === 'deletions' ? 'from' : 'to');
     }
   }
 };

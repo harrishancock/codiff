@@ -96,25 +96,27 @@ export const codeViewUnsafeCSS = `
   }
 
   :host(:not([data-codiff-moved-palette="off"])) [data-codiff-moved-watermark]::after {
-    content: 'MOVED';
-    font: 700 46px/1 var(--font-sans);
+    font: 700 30px/0.85 var(--font-sans);
     left: 50%;
     letter-spacing: 0.18em;
     opacity: 0.24;
     pointer-events: none;
     position: absolute;
+    text-align: center;
     top: 50%;
-    transform: translate(-50%, -50%) rotate(-12deg);
-    white-space: nowrap;
+    transform: translate(-50%, -50%) rotate(-8deg);
+    white-space: pre;
     z-index: 1;
   }
 
-  :host(:not([data-codiff-moved-palette="off"])) [data-codiff-moved-watermark="additions"]::after {
+  :host(:not([data-codiff-moved-palette="off"])) [data-codiff-moved-watermark="to"]::after {
     color: var(--codiff-moved-addition);
+    content: 'MOVED\\A TO';
   }
 
-  :host(:not([data-codiff-moved-palette="off"])) [data-codiff-moved-watermark="deletions"]::after {
+  :host(:not([data-codiff-moved-palette="off"])) [data-codiff-moved-watermark="from"]::after {
     color: var(--codiff-moved-deletion);
+    content: 'MOVED\\A FROM';
   }
 
   [data-diff-type="split"][data-overflow="scroll"] {
