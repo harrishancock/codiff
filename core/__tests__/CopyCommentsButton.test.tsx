@@ -104,14 +104,14 @@ test('confirms contextual clearing with the current review count', async () => {
   expect(onClear).toHaveBeenCalledOnce();
 });
 
-test('cycles through moved-code palettes including off', async () => {
+test('toggles balanced moved-code highlighting off', async () => {
   const onChange = vi.fn();
   await using app = await renderReact(
-    <MovedCodePaletteControl onChange={onChange} value="violet" />,
+    <MovedCodePaletteControl onChange={onChange} value="slate" />,
   );
 
   const button = app.container.querySelector<HTMLButtonElement>('button');
-  expect(button?.textContent).toBe('Moves: Faint');
+  expect(button?.textContent).toBe('Moves: Balanced');
   await act(() => button?.click());
   expect(onChange).toHaveBeenCalledWith('off');
 });

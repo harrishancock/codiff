@@ -511,12 +511,10 @@ export function ClearReviewDraftsButton({
   );
 }
 
-const movedCodePalettes: ReadonlyArray<MovedCodePalette> = ['slate', 'blue', 'violet', 'off'];
+const movedCodePalettes: ReadonlyArray<MovedCodePalette> = ['slate', 'off'];
 const movedCodePaletteLabels: Record<MovedCodePalette, string> = {
-  blue: 'Cool',
   off: 'Off',
   slate: 'Balanced',
-  violet: 'Faint',
 };
 
 export function MovedCodePaletteControl({

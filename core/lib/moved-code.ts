@@ -6,7 +6,7 @@ export type MovedLine = {
   side: 'additions' | 'deletions';
 };
 
-export type MovedCodePalette = 'blue' | 'off' | 'slate' | 'violet';
+export type MovedCodePalette = 'off' | 'slate';
 
 type ChangedLine = MovedLine & {
   content: string;
@@ -175,11 +175,14 @@ export const applyMovedLineAttributes = (root: ParentNode, lines: ReadonlyArray<
     }
   }
   for (const run of runs) {
-    const middle = run[Math.floor(run.length / 2)];
-    const lineType = middle.side === 'deletions' ? 'change-deletion' : 'change-addition';
-    root
-      .querySelector(`[data-line-type="${lineType}"][data-line="${middle.lineNumber}"]`)
-      ?.setAttribute('data-codiff-moved-watermark', middle.side);
+    for (let offset = 0; offset < run.length; offset += 10) {
+      const band = run.slice(offset, offset + 10);
+      const middle = band[Math.floor(band.length / 2)];
+      const lineType = middle.side === 'deletions' ? 'change-deletion' : 'change-addition';
+      root
+        .querySelector(`[data-line-type="${lineType}"][data-line="${middle.lineNumber}"]`)
+        ?.setAttribute('data-codiff-moved-watermark', middle.side);
+    }
   }
 };
 

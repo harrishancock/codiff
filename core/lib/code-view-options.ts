@@ -76,16 +76,6 @@ export const codeViewUnsafeCSS = `
     --codiff-moved-deletion: light-dark(#9b6464, #bd8585);
   }
 
-  :host([data-codiff-moved-palette="blue"]) {
-    --codiff-moved-addition: light-dark(#567d70, #79a99a);
-    --codiff-moved-deletion: light-dark(#986b72, #bc8a93);
-  }
-
-  :host([data-codiff-moved-palette="violet"]) {
-    --codiff-moved-addition: light-dark(#68796c, #91a58a);
-    --codiff-moved-deletion: light-dark(#8a7171, #ad9191);
-  }
-
   :host(:not([data-codiff-moved-palette="off"])) [data-codiff-moved][data-line-type="change-addition"] {
     --diffs-addition-base: var(--codiff-moved-addition);
     --diffs-bg-addition-emphasis: transparent;
@@ -107,10 +97,10 @@ export const codeViewUnsafeCSS = `
 
   :host(:not([data-codiff-moved-palette="off"])) [data-codiff-moved-watermark]::after {
     content: 'MOVED';
-    font: 700 42px/1 var(--font-sans);
+    font: 700 46px/1 var(--font-sans);
     left: 50%;
     letter-spacing: 0.18em;
-    opacity: 0.18;
+    opacity: 0.24;
     pointer-events: none;
     position: absolute;
     top: 50%;

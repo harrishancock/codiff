@@ -112,3 +112,24 @@ test('tags moved rows and marks each contiguous run with one watermark', () => {
     false,
   );
 });
+
+test('repeats watermarks in ten-row bands across long moved runs', () => {
+  const root = document.createElement('div');
+  root.innerHTML = Array.from(
+    { length: 22 },
+    (_, index) => `<div data-line="${index + 1}" data-line-type="change-addition"></div>`,
+  ).join('');
+  const lines = Array.from({ length: 22 }, (_, index) => ({
+    lineNumber: index + 1,
+    sectionId: 'section',
+    side: 'additions' as const,
+  }));
+
+  applyMovedLineAttributes(root, lines);
+
+  expect(
+    [...root.querySelectorAll('[data-codiff-moved-watermark]')].map((element) =>
+      element.getAttribute('data-line'),
+    ),
+  ).toEqual(['6', '16', '22']);
+});
