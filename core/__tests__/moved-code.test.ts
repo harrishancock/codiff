@@ -88,16 +88,27 @@ test('keeps blank lines and repeated bridge declarations inside a move', () => {
   });
 });
 
-test('tags moved content and gutter rows without changing adaptation lines', () => {
+test('tags moved rows and marks each contiguous run with one watermark', () => {
   const root = document.createElement('div');
   root.innerHTML = `
     <div data-line="5" data-line-type="change-deletion"></div>
     <div data-column-number="5" data-line-type="change-deletion"></div>
     <div data-line="6" data-line-type="change-deletion"></div>
+    <div data-line="7" data-line-type="change-deletion"></div>
+    <div data-line="9" data-line-type="change-deletion" data-codiff-moved-watermark></div>
   `;
 
-  applyMovedLineAttributes(root, [{ lineNumber: 5, sectionId: 'section', side: 'deletions' }]);
+  applyMovedLineAttributes(root, [
+    { lineNumber: 5, sectionId: 'section', side: 'deletions' },
+    { lineNumber: 6, sectionId: 'section', side: 'deletions' },
+    { lineNumber: 7, sectionId: 'section', side: 'deletions' },
+  ]);
 
-  expect(root.querySelectorAll('[data-codiff-moved]')).toHaveLength(2);
-  expect(root.querySelector('[data-line="6"]')?.hasAttribute('data-codiff-moved')).toBe(false);
+  expect(root.querySelectorAll('[data-codiff-moved]')).toHaveLength(4);
+  const watermark = root.querySelector('[data-codiff-moved-watermark]');
+  expect(watermark?.getAttribute('data-line')).toBe('6');
+  expect(watermark?.getAttribute('data-codiff-moved-watermark')).toBe('deletions');
+  expect(root.querySelector('[data-line="9"]')?.hasAttribute('data-codiff-moved-watermark')).toBe(
+    false,
+  );
 });

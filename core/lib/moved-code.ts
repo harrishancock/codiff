@@ -147,12 +147,39 @@ export const applyMovedLineAttributes = (root: ParentNode, lines: ReadonlyArray<
   for (const element of root.querySelectorAll('[data-codiff-moved]')) {
     element.removeAttribute('data-codiff-moved');
   }
+  for (const element of root.querySelectorAll('[data-codiff-moved-watermark]')) {
+    element.removeAttribute('data-codiff-moved-watermark');
+  }
   for (const line of lines) {
     const lineType = line.side === 'deletions' ? 'change-deletion' : 'change-addition';
     const selector = `[data-line-type="${lineType}"]:is([data-line="${line.lineNumber}"], [data-column-number="${line.lineNumber}"])`;
     for (const element of root.querySelectorAll(selector)) {
       element.setAttribute('data-codiff-moved', '');
     }
+  }
+
+  const runs: Array<Array<MovedLine>> = [];
+  for (const line of lines) {
+    const run = runs.at(-1);
+    const previous = run?.at(-1);
+    if (
+      run &&
+      previous &&
+      previous.sectionId === line.sectionId &&
+      previous.side === line.side &&
+      previous.lineNumber + 1 === line.lineNumber
+    ) {
+      run.push(line);
+    } else {
+      runs.push([line]);
+    }
+  }
+  for (const run of runs) {
+    const middle = run[Math.floor(run.length / 2)];
+    const lineType = middle.side === 'deletions' ? 'change-deletion' : 'change-addition';
+    root
+      .querySelector(`[data-line-type="${lineType}"][data-line="${middle.lineNumber}"]`)
+      ?.setAttribute('data-codiff-moved-watermark', middle.side);
   }
 };
 

@@ -513,10 +513,10 @@ export function ClearReviewDraftsButton({
 
 const movedCodePalettes: ReadonlyArray<MovedCodePalette> = ['slate', 'blue', 'violet', 'off'];
 const movedCodePaletteLabels: Record<MovedCodePalette, string> = {
-  blue: 'Blue',
+  blue: 'Cool',
   off: 'Off',
-  slate: 'Slate',
-  violet: 'Violet',
+  slate: 'Balanced',
+  violet: 'Faint',
 };
 
 export function MovedCodePaletteControl({
@@ -531,10 +531,10 @@ export function MovedCodePaletteControl({
 
   return (
     <button
-      aria-label={`Moved code color: ${movedCodePaletteLabels[value]}. Change to ${movedCodePaletteLabels[nextPalette]}`}
+      aria-label={`Moved code style: ${movedCodePaletteLabels[value]}. Change to ${movedCodePaletteLabels[nextPalette]}`}
       className="moved-code-palette-control"
       onClick={() => onChange(nextPalette)}
-      title="Cycle moved-code highlighting color"
+      title="Cycle moved-code highlighting style"
       type="button"
     >
       Moves: {movedCodePaletteLabels[value]}

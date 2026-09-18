@@ -111,7 +111,7 @@ test('cycles through moved-code palettes including off', async () => {
   );
 
   const button = app.container.querySelector<HTMLButtonElement>('button');
-  expect(button?.textContent).toBe('Moves: Violet');
+  expect(button?.textContent).toBe('Moves: Faint');
   await act(() => button?.click());
   expect(onChange).toHaveBeenCalledWith('off');
 });

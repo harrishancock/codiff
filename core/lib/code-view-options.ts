@@ -72,24 +72,59 @@ export const codeViewUnsafeCSS = `
   }
 
   :host([data-codiff-moved-palette="slate"]) {
-    --codiff-moved-color: light-dark(#64748b, #94a3b8);
+    --codiff-moved-addition: light-dark(#5f8069, #81a98d);
+    --codiff-moved-deletion: light-dark(#9b6464, #bd8585);
   }
 
   :host([data-codiff-moved-palette="blue"]) {
-    --codiff-moved-color: light-dark(#52718f, #89a8c4);
+    --codiff-moved-addition: light-dark(#567d70, #79a99a);
+    --codiff-moved-deletion: light-dark(#986b72, #bc8a93);
   }
 
   :host([data-codiff-moved-palette="violet"]) {
-    --codiff-moved-color: light-dark(#74658d, #aa9bc2);
+    --codiff-moved-addition: light-dark(#68796c, #91a58a);
+    --codiff-moved-deletion: light-dark(#8a7171, #ad9191);
   }
 
-  :host(:not([data-codiff-moved-palette="off"])) [data-codiff-moved] {
-    --diffs-addition-base: var(--codiff-moved-color);
-    --diffs-deletion-base: var(--codiff-moved-color);
+  :host(:not([data-codiff-moved-palette="off"])) [data-codiff-moved][data-line-type="change-addition"] {
+    --diffs-addition-base: var(--codiff-moved-addition);
     --diffs-bg-addition-emphasis: transparent;
+    --diffs-diff-line-mix-target: var(--codiff-moved-addition);
+    --diffs-hover-mix-target: var(--codiff-moved-addition);
+  }
+
+  :host(:not([data-codiff-moved-palette="off"])) [data-codiff-moved][data-line-type="change-deletion"] {
+    --diffs-deletion-base: var(--codiff-moved-deletion);
     --diffs-bg-deletion-emphasis: transparent;
-    --diffs-diff-line-mix-target: var(--codiff-moved-color);
-    --diffs-hover-mix-target: var(--codiff-moved-color);
+    --diffs-diff-line-mix-target: var(--codiff-moved-deletion);
+    --diffs-hover-mix-target: var(--codiff-moved-deletion);
+  }
+
+  :host(:not([data-codiff-moved-palette="off"])) [data-codiff-moved-watermark] {
+    overflow: visible;
+    position: relative;
+  }
+
+  :host(:not([data-codiff-moved-palette="off"])) [data-codiff-moved-watermark]::after {
+    content: 'MOVED';
+    font: 700 42px/1 var(--font-sans);
+    left: 50%;
+    letter-spacing: 0.18em;
+    opacity: 0.18;
+    pointer-events: none;
+    position: absolute;
+    top: 50%;
+    transform: translate(-50%, -50%) rotate(-12deg);
+    white-space: nowrap;
+    z-index: 1;
+  }
+
+  :host(:not([data-codiff-moved-palette="off"])) [data-codiff-moved-watermark="additions"]::after {
+    color: var(--codiff-moved-addition);
+  }
+
+  :host(:not([data-codiff-moved-palette="off"])) [data-codiff-moved-watermark="deletions"]::after {
+    color: var(--codiff-moved-deletion);
   }
 
   [data-diff-type="split"][data-overflow="scroll"] {
